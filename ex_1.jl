@@ -6,13 +6,13 @@ using Printf
 using XLSX
 
 #units
-P=12
+P=18
 D=17 
 model_1= Model(Gurobi.Optimizer)
 
-prod_price=[13.32 13.32 20.7 20.93 26.11 10.52 10.52 6.02 5.47 0 10.52 10.89]
-
-prod_capacity=[152 152 350 591 60 155 155 400 400 300 310 350]
+#Producers including 6 Wind farms producing max 200MW looking at the data of several zone at 12 pm
+prod_price=[13.32 13.32 20.7 20.93 26.11 10.52 10.52 6.02 5.47 0 10.52 10.89 0 0 0 0 0 0]
+prod_capacity=[152 152 350 591 60 155 155 400 400 300 310 350 200*0.703270 200*0.723443 200*0.738949 200*0.635512 200*0.700758 200*0.711764]
 
 
 
@@ -63,17 +63,24 @@ if termination_status(model_1) == MOI.OPTIMAL
     Market_price=0
     # Display other information for the current time step
     for p in 1:P 
-        println(file,"Producer $p : Produce $(value.(q_prod[p])) / Price $(prod_price[p])")
         if value.(q_prod[p]) != 0 && value.(q_prod[p]) != prod_capacity[p]
             global Market_price=value.(prod_price[p])
         end
     end
 
     for d in 1:D 
-        println(file,"Demand $d : Consume $(value.(q_demand[d])) / Price $(demand_price[d])")
         if value.(q_demand[d]) != 0 && value.(q_demand[d]) != demand_max[d] 
             global Market_price=value.(demand_price[d])
         end
+    end
+
+    for p in 1:P 
+        println(file,"Producer $p : Produce $(round.(value.(q_prod[p]),digits=2)) / Profit $(round.(value.(q_prod[p])*(Market_price-prod_price[p]),digits=2))")
+        
+    end
+
+    for d in 1:D 
+        println(file,"Demand $d : Consume $(round.(value.(q_demand[d]),digits=2)) / Utility $(round.(value.(q_demand[d])*(demand_price[d]-Market_price),digits=2))")
     end
 
     println(file,"-----------------")  # Separator between time steps
@@ -85,50 +92,5 @@ if termination_status(model_1) == MOI.OPTIMAL
     close(file)
     # Open the file 
     run(`cmd /c start notepad $file_path`)
-    
-
-    # Open a new Excel file
-    output_file = XLSX.openxlsx()
-
-    # Add a new sheet to the Excel file
-    sheet = XLSX.addsheet(output_file, "Results")
-
-    # Write the objective value to the Excel file
-    XLSX.writestring(sheet, "A1", "Maximal Welfare")
-    XLSX.writenumber(sheet, "B1", JuMP.objective_value(model_1))
-
-    # Write other information about producers and demands to the Excel file
-    producer_row = 3
-    demand_row = 3
-    for p in 1:P 
-        global producer_row
-        XLSX.writestring(sheet, "A$(producer_row)", "Producer $p")
-        XLSX.writenumber(sheet, "B$(producer_row)", value.(q_prod[p]))
-        XLSX.writenumber(sheet, "C$(producer_row)", prod_price[p])
-        producer_row += 1
-    end
-
-    for d in 1:D 
-        global demand_row
-        XLSX.writestring(sheet, "E$(demand_row)", "Demand $d")
-        XLSX.writenumber(sheet, "F$(demand_row)", value.(q_demand[d]))
-        XLSX.writenumber(sheet, "G$(demand_row)", demand_price[d])
-        demand_row += 1
-    end
-
-    # Write the market price to the Excel file
-    XLSX.writestring(sheet, "A$producer_row", "Market Price")
-    XLSX.writenumber(sheet, "B$producer_row", Market_price)
-
-    # Save and close the Excel file
-    XLSX.save(output_file, "output.xlsx")
-
 
 end
-#=
-else
-    return error("No solution.")
-end
-
-end
-=#
