@@ -65,12 +65,12 @@ if termination_status(model_1) == MOI.OPTIMAL
     Market_price=-dual(Energy_Equilibrium)
 
     for p in 1:P 
-        println(file,"Producer $p : Produce $(round.(value.(q_prod[p]),digits=2)) / Profit $(round.(value.(q_prod[p])*(Market_price-prod_price[p]),digits=2))")
+        println(file,"Producer $p : Produces $(round.(value.(q_prod[p]),digits=2)) / Profit $(round.(value.(q_prod[p])*(Market_price-prod_price[p]),digits=2))")
         
     end
 
     for d in 1:D 
-        println(file,"Demand $d : Consume $(round.(value.(q_demand[d]),digits=2)) / Utility $(round.(value.(q_demand[d])*(demand_price[d]-Market_price),digits=2))")
+        println(file,"Demand $d : Consumes $(round.(value.(q_demand[d]),digits=2)) / Benefit $(round.(value.(q_demand[d])*(demand_price[d]-Market_price),digits=2))")
     end
    
     println(file,"-----------------")  # Separator between time steps
