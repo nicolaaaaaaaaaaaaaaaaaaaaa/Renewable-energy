@@ -32,7 +32,7 @@ demand_price= [ 13.0 11.6 21.5 8.9 8.5 16.4 15.0 20.5 20.9 23.2 31.8 23.2 37.9 1
 
 @constraint(model_1, Demand_limit[d in 1:D], demand_max[d]>=q_demand[d])
 
-@constraint(model_1, Send_recieved, sum(q_demand[d] for d in 1:D) == sum(q_prod[p] for p in 1:P))
+@constraint(model_1, Energy_Equilibrium, sum(q_demand[d] for d in 1:D) == sum(q_prod[p] for p in 1:P))
 
 # Solving the model
 optimize!(model_1)
@@ -60,19 +60,9 @@ if termination_status(model_1) == MOI.OPTIMAL
     println(file,"Maximal Welfare : $(round.(objective_value(model_1), digits=2))")
     println(file,"-----------------")
 
-    Market_price=0
+    
     # Display other information for the current time step
-    for p in 1:P 
-        if value.(q_prod[p]) != 0 && value.(q_prod[p]) != prod_capacity[p]
-            global Market_price=value.(prod_price[p])
-        end
-    end
-
-    for d in 1:D 
-        if value.(q_demand[d]) != 0 && value.(q_demand[d]) != demand_max[d] 
-            global Market_price=value.(demand_price[d])
-        end
-    end
+    Market_price=-dual(Energy_Equilibrium)
 
     for p in 1:P 
         println(file,"Producer $p : Produce $(round.(value.(q_prod[p]),digits=2)) / Profit $(round.(value.(q_prod[p])*(Market_price-prod_price[p]),digits=2))")
@@ -82,7 +72,7 @@ if termination_status(model_1) == MOI.OPTIMAL
     for d in 1:D 
         println(file,"Demand $d : Consume $(round.(value.(q_demand[d]),digits=2)) / Utility $(round.(value.(q_demand[d])*(demand_price[d]-Market_price),digits=2))")
     end
-
+   
     println(file,"-----------------")  # Separator between time steps
     println(file,"Price $(Market_price)")
     println(file,"-----------------")  # Separator between time steps
