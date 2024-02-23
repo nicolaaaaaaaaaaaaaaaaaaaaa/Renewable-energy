@@ -6,8 +6,7 @@ using Printf
 using XLSX
 
 #units
-P=18
-D=17
+
 T=24
 
 model_1= Model(Gurobi.Optimizer)
@@ -25,7 +24,7 @@ prod_capacities=(repeat(prod_capacity,24,1))'
 demand_price= [13.0 11.6 21.5 8.9 8.5 16.4 15.0 20.5 20.9 23.2 31.8 23.2 37.9 12.0 40.0 21.9 15.4 ]
 demand_repartition= [3.8 3.4 6.3 2.6 2.5 4.8 4.4 6 6.1 6.8 9.3 6.8 11.1 3.5 11.7 6.4 4.5]
 
-Time_load = [1775.835   1669.815	1590.300	1563.795	1563.795	1590.300	1961.370	2279.430	251.975	2544.480	2544.480	2517.975	2517.975	2517.975	2464.965	2464.965	2623.995	2650.500	2650.500	2544.480	2411.955	2199.915	1934.865	1669.815]
+Time_load = [1775.835   1669.815	1590.300	1563.795	1563.795	1590.300	1961.370	2279.430	2517.975	2544.480	2544.480	2517.975	2517.975	2517.975	2464.965	2464.965	2623.995	2650.500	2650.500	2544.480	2411.955	2199.915	1934.865	1669.815]
 
 #Time dependent demand
 demand_max= (Time_load' * demand_repartition/100)'
@@ -36,9 +35,14 @@ coefficient=Time_load/Time_load[12]
 #Time dependent utility
 demand_prices = (coefficient' * demand_price)'
 
-println(size(prod_capacity))
-println(size(prod_capacities))
-println(size(demand_prices))
+#ramp limit in MW/h
+ramp_limit = [120   120 350	240	60	155	155	280	280	300	180	240 200 200 200 200 200 200]
+
+P=length(prod_price)
+D=length(demand_price)
+
+
+
 @variable(model_1, q_prod[1:P,1:T]>=0)
 @variable(model_1, q_demand[1:D,1:T]>=0)
 
@@ -52,12 +56,13 @@ println(size(demand_prices))
 
 @constraint(model_1, Energy_Equilibrium[t in 1:T], sum(q_demand[d,t] for d in 1:D) == sum(q_prod[p,t] for p in 1:P))
 
+@constraint(model_1, Ramp_limit[p in 1:P, t in 2:T], ramp_limit[p]>=q_prod[p,t]-q_prod[p,t-1]>=-ramp_limit[p])
+
 # Solving the model
 optimize!(model_1)
 
 # Printing the termination status
 println("Status: ", JuMP.termination_status(model_1))
-
 
 # Printing the objective value
 println("Objective value: ", JuMP.objective_value(model_1))

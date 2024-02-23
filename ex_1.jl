@@ -6,20 +6,20 @@ using Printf
 using XLSX
 
 #units
-P=18
-D=17 
+
 model_1= Model(Gurobi.Optimizer)
 
 #Producers including 6 Wind farms producing max 200MW looking at the data of several zone at 12 pm
-prod_price=[13.32 13.32 20.7 20.93 26.11 10.52 10.52 6.02 5.47 0 10.52 10.89 0 0 0 0 0 0]
-prod_capacity=[152 152 350 591 60 155 155 400 400 300 310 350 200*0.703270 200*0.723443 200*0.738949 200*0.635512 200*0.700758 200*0.711764]
-
+prod_price=[13.32 13.32 20.7 20.93 26.11 10.52 10.52 6.02 5.47 0 10.52 10.89] #0 0 0 0 0 0]
+prod_capacity=[152 152 350 591 60 155 155 400 400 300 310 350] # 200*0.703270 200*0.723443 200*0.738949 200*0.635512 200*0.700758 200*0.711764]
 
 
 demand_max= [95.7 85.6 158.6 65.5 62.9 120.9  110.8 151.1 153.6 171.2 234.2 171.2 279.5 88.1 294.6 161.2 113.3 ]
 
 demand_price= [ 13.0 11.6 21.5 8.9 8.5 16.4 15.0 20.5 20.9 23.2 31.8 23.2 37.9 12.0 40.0 21.9 15.4 ]
 
+P=length(prod_price)
+D=length(demand_price)
 
 @variable(model_1, q_prod[1:P]>=0)
 @variable(model_1, q_demand[1:D]>=0)
