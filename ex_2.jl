@@ -11,33 +11,15 @@ T=24
 
 model_1= Model(Gurobi.Optimizer)
 
+""" Production """
 #Producers including 6 Wind farms producing max 200MW looking at the data of several zone at 12 pm
 prod_price=[13.32 13.32 20.7 20.93 26.11 10.52 10.52 6.02 5.47 0 10.52 10.89 0 0 0 0 0 0]
 prod_capacity=[152 152 350 591 60 155 155 400 400 300 310 350 200 200 200 200 200 200]
 
-"""Be careful we need to modify the capacity of the Wind farm"""
-
-
-demand_price= [13.0 11.6 21.5 8.9 8.5 16.4 15.0 20.5 20.9 23.2 31.8 23.2 37.9 12.0 40.0 21.9 15.4 ]
-demand_repartition= [3.8 3.4 6.3 2.6 2.5 4.8 4.4 6 6.1 6.8 9.3 6.8 11.1 3.5 11.7 6.4 4.5]
-
-Time_load = [1775.835   1669.815	1590.300	1563.795	1563.795	1590.300	1961.370	2279.430	2517.975	2544.480	2544.480	2517.975	2517.975	2517.975	2464.965	2464.965	2623.995	2650.500	2650.500	2544.480	2411.955	2199.915	1934.865	1669.815]
-
-#Time dependent demand
-demand_max= (Time_load' * demand_repartition/100)'
-
-#For step one we looked at hour 12 so now we are just creating a coefficient in order to make the utility time dependent
-coefficient=Time_load/Time_load[12]
-
-#Time dependent utility
-demand_prices = (coefficient' * demand_price)'
-
-#ramp limit in MW/h
-ramp_limit = [120   120 350	240	60	155	155	280	280	300	180	240 200 200 200 200 200 200]
-
+#production size
 P=length(prod_price)
-D=length(demand_price)
 
+#Implementation of coefficient for making change the wind power
 zone = [0.59	0.70	0.68	0.51	0.66	0.61;
         0.68	0.71	0.72	0.60	0.68	0.65;
         0.74	0.73	0.74	0.65	0.67	0.67;
@@ -63,33 +45,83 @@ zone = [0.59	0.70	0.68	0.51	0.66	0.61;
         0.69	0.68	0.71	0.65	0.66	0.66;
         0.65	0.59	0.64	0.61	0.59	0.59]
 
-wind_coef = ones(24, P)
+wind_coef = ones(T, P)
 
 # Update the last 6 columns of the matrix with the Excel data
-for i in 1:24
-    for j in 13:18  # Last 6 columns
+for i in 1:T
+    for j in 13:P  # Last 6 columns
         wind_coef[i, j] = zone[i, j-12]  # Adjust column index to match Excel data
     end
 end
 
+#Compute the production capacities matrix with time dependancy
+prod_capacities=(wind_coef.*(repeat(prod_capacity,T,1)))'
 
-prod_capacities=(wind_coef.*(repeat(prod_capacity,24,1)))'
+""" Demand """
+#Prices at hour 12 that were used in task 1 
+demand_utility= [13.0 11.6 21.5 8.9 8.5 16.4 15.0 20.5 20.9 23.2 31.8 23.2 37.9 12.0 40.0 21.9 15.4 ]
+
+#Demand coefficient repartition
+demand_repartition= [3.8 3.4 6.3 2.6 2.5 4.8 4.4 6 6.1 6.8 9.3 6.8 11.1 3.5 11.7 6.4 4.5]
+
+#Time dependancy of the overall Load
+Time_load = [1775.835   1669.815	1590.300	1563.795	1563.795	1590.300	1961.370	2279.430	2517.975	2544.480	2544.480	2517.975	2517.975	2517.975	2464.965	2464.965	2623.995	2650.500	2650.500	2544.480	2411.955	2199.915	1934.865	1669.815]
+
+#Compute the demand matrix with time dependancy
+demand_max= (Time_load' * demand_repartition/100)'
+
+#For step one we looked at hour 12 so now we are just creating a coefficient in order to make the utility time dependent
+coefficient=Time_load/Time_load[12]
+
+#Time dependent utility
+demand_utilities = (coefficient' * demand_utility)'
+
+#Demand size
+D=length(demand_utility)
 
 
+""" Task 2 constraints """
+
+#ramp limit in MW/h
+ramp_limit = [120   120 350	240	60	155	155	280	280	300	180	240 200 200 200 200 200 200]
+
+
+#Electrolyzer demand
+demand_electrolyzer = zeros(P)
+demand_electrolyzer[P] = 28 #T
+demand_electrolyzer[P-1] = 45 #T
+demand_electrolyzer[P-2] = 50 #T
+
+""" Variables """
+
+#Quantity of energy producted that goes into the grid in MWh
 @variable(model_1, q_prod[1:P,1:T]>=0)
+
+#Quantity of energy consumed by the demand in MWh
 @variable(model_1, q_demand[1:D,1:T]>=0)
 
+#Quantity of energy producted by the producers for the wind turbines' electrolyzer in MWh 
+@variable(model_1, q_electrolyzer_prod[1:P,1:T]>=0)
 
-@objective(model_1, Max, sum(demand_prices[i,t]*q_demand[i,t] for i in 1:D, t in 1:T) - sum(prod_price[i]*q_prod[i,t] for i in 1:P, t in 1:T))
+""" Objective function """
 
+@objective(model_1, Max, sum(demand_utilities[i,t]*q_demand[i,t] for i in 1:D, t in 1:T) - sum(prod_price[i]*(q_prod[i,t]+ q_electrolyzer_prod[i,t]) for i in 1:P, t in 1:T))
 
-@constraint(model_1, Production_limit[p in 1:P, t in 1:T], prod_capacities[p,t]>=q_prod[p,t])
+""" Constraints """
+#Limit of the quantity of energy producted
+@constraint(model_1, Production_limit[p in 1:P, t in 1:T], prod_capacities[p,t]>=q_prod[p,t]+q_electrolyzer_prod[p,t])
 
+#Limit of the quantity of energy consumed
 @constraint(model_1, Demand_limit[d in 1:D, t in 1:T], demand_max[d,t]>=q_demand[d,t])
 
+#Equilibrium of the energy on the grid
 @constraint(model_1, Energy_Equilibrium[t in 1:T], sum(q_demand[d,t] for d in 1:D) == sum(q_prod[p,t] for p in 1:P))
 
-@constraint(model_1, Ramp_limit[p in 1:P, t in 2:T], ramp_limit[p]>=q_prod[p,t]-q_prod[p,t-1]>=-ramp_limit[p])
+#Ramp limit constraint on the difference between the total energy producted at t and at t-1 
+@constraint(model_1, Ramp_limit[p in 1:P, t in 2:T], ramp_limit[p]>=(q_prod[p,t]+q_electrolyzer_prod[p,t]-q_prod[p,t-1]-q_electrolyzer_prod[p,t-1])>=-ramp_limit[p])
+
+#Electrolyzer constraint, the demand for hydrogen should be met by the end of the day by the concerned wind farm 
+@constraint(model_1, Demand_electrolyzer[p in 1:P], demand_electrolyzer[p]==sum(q_electrolyzer_prod[p,t] for t in 1:T)*18/1000)
 
 # Solving the model
 optimize!(model_1)
@@ -122,30 +154,10 @@ if termination_status(model_1) == MOI.OPTIMAL
     # Display other information for the current time step
     for i in 1:T
         Market_price[i]=-dual(Energy_Equilibrium[i])
-        println("Step : $(i)    Market price : $(Market_price[i])")
+        println("Step : $(i)    Market price : $(Market_price[i])")  
+        println("Prod : $(value.(q_prod[:,i]))")
+        println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
     end
 
 end
 
-#=
-    for p in 1:P 
-        println(file,"Producer $p : Produces $(round.(value.(q_prod[p]),digits=2)) / Profit $(round.(value.(q_prod[p])*(Market_price-prod_price[p]),digits=2))")
-        
-    end
-
-    for d in 1:D 
-        println(file,"Demand $d : Consumes $(round.(value.(q_demand[d]),digits=2)) / Benefit $(round.(value.(q_demand[d])*(demand_price[d]-Market_price),digits=2))")
-    end
-   
-    println(file,"-----------------")  # Separator between time steps
-    println(file,"Price $(Market_price)")
-    println(file,"-----------------")  # Separator between time steps
-    # Flush the file to ensure all data is written
-    flush(file)
-    # Close the file
-    close(file)
-    # Open the file 
-    run(`cmd /c start notepad $file_path`)
-
-
-=#
