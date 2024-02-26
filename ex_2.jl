@@ -89,8 +89,11 @@ ramp_limit = [120   120 350	240	60	155	155	280	280	300	180	240 200 200 200 200 2
 #Electrolyzer demand
 demand_electrolyzer = zeros(P)
 demand_electrolyzer[P] = 28 #T
-demand_electrolyzer[P-1] = 45 #T
-demand_electrolyzer[P-2] = 50 #T
+demand_electrolyzer[P-1] = 40 #T
+demand_electrolyzer[P-2] = 43 #T
+
+#Installed capacity
+hydrogen_limit = 100 #MW
 
 """ Variables """
 
@@ -122,6 +125,9 @@ demand_electrolyzer[P-2] = 50 #T
 
 #Electrolyzer constraint, the demand for hydrogen should be met by the end of the day by the concerned wind farm 
 @constraint(model_1, Demand_electrolyzer[p in 1:P], demand_electrolyzer[p]==sum(q_electrolyzer_prod[p,t] for t in 1:T)*18/1000)
+
+#Electrolyzer production Limit
+@constraint(model_1, Hydrogen_limit[p in 1:P, t in 1:T], hydrogen_limit>=q_electrolyzer_prod[p,t])
 
 # Solving the model
 optimize!(model_1)
@@ -157,6 +163,7 @@ if termination_status(model_1) == MOI.OPTIMAL
         println("Step : $(i)    Market price : $(Market_price[i])")  
         println("Prod : $(value.(q_prod[:,i]))")
         println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
+
     end
 
 end
