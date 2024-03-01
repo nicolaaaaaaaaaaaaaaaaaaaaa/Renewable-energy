@@ -152,8 +152,8 @@ Lines_Capacity = zeros(B,B)
 
 for i in 1:length(Lines_data[1,:])
     #Write the symetrical matrix
-    Lines_representation[floor(Int,Lines_data[1,i]),floor(Int,Lines_data[2,i])]=Lines_data[3,i]
-    Lines_representation[floor(Int,Lines_data[2,i]),floor(Int,Lines_data[1,i])]=Lines_data[3,i]
+    Lines_Reactance[floor(Int,Lines_data[1,i]),floor(Int,Lines_data[2,i])]=Lines_data[3,i]
+    Lines_Reactance[floor(Int,Lines_data[2,i]),floor(Int,Lines_data[1,i])]=Lines_data[3,i]
 end
 
 
@@ -191,7 +191,7 @@ end
 @constraint(model_1, Demand_limit[d in 1:D, t in 1:T], demand_max[d,t]>=q_demand[d,t])
 
 #Equilibrium of the energy on the grid
-@constraint(model_1, Energy_Equilibrium[n in 1:B, t in 1:T], sum(q_demand[d,t] for d in 1:D) + sum(Lines_Reactance[n,m]*(theta_bus[n,t] - theta_bus[m,t]) for m in 1:B) == sum(q_prod[p,t] for p in 1:P))
+@constraint(model_1, Energy_Equilibrium[n in 1:B, t in 1:T], sum(q_demand[d,t] for d in nodes[2][n]) + sum(Lines_Reactance[n,m]*(theta_bus[n,t] - theta_bus[m,t]) for m in 1:B) == sum(q_prod[p,t] for p in nodes[1][n]))
 
 #Ramp limit constraint on the difference between the total energy producted at t and at t-1 
 @constraint(model_1, Ramp_limit[p in 1:P, t in 2:T], ramp_limit[p]>=(q_prod[p,t]+q_electrolyzer_prod[p,t]-q_prod[p,t-1]-q_electrolyzer_prod[p,t-1])>=-ramp_limit[p])
@@ -203,7 +203,7 @@ end
 @constraint(model_1, angle_ref[t in 1:T], theta_bus[1,t]==0)
 
 # capacity constraints
-@constraint(model_1, Capacity_constraint[n in 1:B, m in 1:B, t in 1:T], abs(Lines_Reactance[n,m]*(theta_bus[n,t] - theta_bus[m,t])) <= Lines_Capacity[n,m])
+@constraint(model_1, Capacity_constraint[n in 1:B, m in 1:B, t in 1:T], -Lines_Capacity[n,m]<= Lines_Reactance[n,m]*(theta_bus[n,t] - theta_bus[m,t]) <= Lines_Capacity[n,m])
 
 
 # Solving the model
@@ -232,12 +232,20 @@ if termination_status(model_1) == MOI.OPTIMAL
     println(file,"Maximal Welfare : $(round.(objective_value(model_1), digits=2))")
     println(file,"-----------------")
 
-    Market_price=zeros(Float64,24)
+    Market_price=zeros(Float64,(T,B))
 
     # Display other information for the current time step
     for i in 1:T
-        Market_price[i]=-dual(Energy_Equilibrium[i])
-        println("Step : $(i)    Market price : $(Market_price[i])")  
+        println("Step : $(i)")
+        for b in 1:B
+            Market_price[i,b]=-dual(Energy_Equilibrium[b,i])
+            Power_flow= zeros(B)
+            for m in 1:B
+                Power_flow[m] = Lines_Reactance[b,m]*(value.(theta_bus[b,i]) - value.(theta_bus[m,i]))
+            end
+            println("Power flow : $(Power_flow)")
+        end
+        println("Market price : $(Market_price[i,:])") 
         println("Prod : $(value.(q_prod[:,i]))")
         println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
     end
