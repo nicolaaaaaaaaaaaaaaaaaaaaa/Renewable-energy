@@ -168,6 +168,7 @@ end
 
 #Define the zones
 List_zones = [[1,2,3,4,5,6,7,8,9,10],[11,12,13,14,19,20,23],[15,16,17,18,21,22,24]]
+#List_zones = [[1,2,3,4,5,6,7,8,9,10],[11,12,13,14,15,16,19,20,23,24],[17,18,21,22]]
 Z=length(List_zones)
 
 #Define the ATC between every zones
@@ -202,7 +203,11 @@ sum(Lines_Capacity[m,n] for m in List_zones[1], n in List_zones[3]) sum(Lines_Ca
 
 #Equilibrium of the energy on the grid
 @constraint(model_1, Energy_Equilibrium[z in 1:Z, t in 1:T], sum(sum(q_demand[d,t] for d in nodes[2][k]) for k in List_zones[z]) + sum(f_a_b[z,y,t] for y in Z) == sum(sum(q_prod[p,t] for p in nodes[1][k]) for k in List_zones[z]))
-
+""" 
+ATTENTION PLEASE
+this code is not working
+Try to remove the double sum while using a list listing all the loads and generators per zone
+"""
 #Ramp limit constraint on the difference between the total energy producted at t and at t-1 
 @constraint(model_1, Ramp_limit[p in 1:P, t in 2:T], ramp_limit[p]>=(q_prod[p,t]+q_electrolyzer_prod[p,t]-q_prod[p,t-1]-q_electrolyzer_prod[p,t-1])>=-ramp_limit[p])
 
@@ -257,3 +262,4 @@ if termination_status(model_1) == MOI.OPTIMAL
     end
 
 end
+
