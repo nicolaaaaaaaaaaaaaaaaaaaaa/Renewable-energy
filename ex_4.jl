@@ -103,20 +103,23 @@ Load_location = [1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17;
 Generator_location = [1	2	3	4	5	6	7	8	9	10	11	12 13 14 15 16 17 18;
 1	2	7	13	15	15	16	18	21	22	23	23  3   5   7   16  21  23]
 
-#Generate lists
+#Generate lists which will contain at index i a list of every generator or load that is connected to node i
 generator_to_nodes = []
 load_to_nodes = []
 
-for i in 1:B
-
+#Go through the busses
+for i in 1:B    
     list1=Int[]
+    #go through every generator    
     for k in 1:length(Generator_location[1,:])
-
+        #check if the generator k is located on bus i
         if Generator_location[2,k]==i
+            #Add generator to the list
             push!(list1,k)
         end
     end
-    
+
+    #Do the same for the Loads
     list2=Int[]
     for k in 1:length(Load_location[1,:])
         
@@ -126,12 +129,14 @@ for i in 1:B
         
     end
 
+    #Add the lists of generators and loads at the i element of the lists
     push!(generator_to_nodes,list1)
     push!(load_to_nodes, list2) 
 end
 
+#create the list of lists of generators by node for the first element and of loads by node for the second element
 nodes=[generator_to_nodes,load_to_nodes]
-println(nodes)
+
 
 
 #Lines data
@@ -141,21 +146,24 @@ Lines_data = [1	1	1	2	2	3	3	4	5	6	7	8	8	9	9	10	10	11	11	12	12	13	14	15	15	15	16	
 175	175	350	175	175	175	400	175	350	175	350	175	175	400	400	400	400	500	500	500	500	500	500	500	1000	500	500	500	500	500	1000	1000	1000	500]
 
 
+#Generate matrices representing the busses which will contain the Reactance and the capacity for every connection line that exist between busses i and j
 Lines_Reactance = zeros(B,B)
+Lines_Capacity = zeros(B,B)
 
 for i in 1:length(Lines_data[1,:])
+    #Write the symetrical matrix
     Lines_representation[floor(Int,Lines_data[1,i]),floor(Int,Lines_data[2,i])]=Lines_data[3,i]
     Lines_representation[floor(Int,Lines_data[2,i]),floor(Int,Lines_data[1,i])]=Lines_data[3,i]
 end
 
-Lines_Capacity = zeros(B,B)
+
 
 for i in 1:length(Lines_data[1,:])
+    #Write the symetrical matrix
     Lines_Capacity[floor(Int,Lines_data[1,i]),floor(Int,Lines_data[2,i])]=Lines_data[4,i]
     Lines_Capacity[floor(Int,Lines_data[2,i]),floor(Int,Lines_data[1,i])]=Lines_data[4,i]
 end
 
-println(Lines_Capacity)
 
 """ Variables """
 
