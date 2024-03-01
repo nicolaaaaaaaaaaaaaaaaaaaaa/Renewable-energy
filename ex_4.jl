@@ -103,6 +103,7 @@ Load_location = [1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17;
 Generator_location = [1	2	3	4	5	6	7	8	9	10	11	12 13 14 15 16 17 18;
 1	2	7	13	15	15	16	18	21	22	23	23  3   5   7   16  21  23]
 
+#Generate lists
 generator_to_nodes = []
 load_to_nodes = []
 
@@ -140,15 +141,22 @@ Lines_data = [1	1	1	2	2	3	3	4	5	6	7	8	8	9	9	10	10	11	11	12	12	13	14	15	15	15	16	
 175	175	350	175	175	175	400	175	350	175	350	175	175	400	400	400	400	500	500	500	500	500	500	500	1000	500	500	500	500	500	1000	1000	1000	500]
 
 
-Lines_representation = zeros(B,B)
+Lines_Reactance = zeros(B,B)
 
 for i in 1:length(Lines_data[1,:])
     Lines_representation[floor(Int,Lines_data[1,i]),floor(Int,Lines_data[2,i])]=Lines_data[3,i]
     Lines_representation[floor(Int,Lines_data[2,i]),floor(Int,Lines_data[1,i])]=Lines_data[3,i]
 end
 
+Lines_Capacity = zeros(B,B)
 
-#=
+for i in 1:length(Lines_data[1,:])
+    Lines_Capacity[floor(Int,Lines_data[1,i]),floor(Int,Lines_data[2,i])]=Lines_data[4,i]
+    Lines_Capacity[floor(Int,Lines_data[2,i]),floor(Int,Lines_data[1,i])]=Lines_data[4,i]
+end
+
+println(Lines_Capacity)
+
 """ Variables """
 
 #Quantity of energy producted that goes into the grid in MWh
@@ -226,4 +234,3 @@ if termination_status(model_1) == MOI.OPTIMAL
 
 end
 
-=#
