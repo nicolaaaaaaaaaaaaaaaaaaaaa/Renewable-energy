@@ -191,7 +191,7 @@ end
 @constraint(model_1, Demand_limit[d in 1:D, t in 1:T], demand_max[d,t]>=q_demand[d,t])
 
 #Equilibrium of the energy on the grid
-@constraint(model_1, Energy_Equilibrium[n in 1:B, t in 1:T], sum(q_demand[d,t] for d in 1:D) + sum(Lines_representation[n,m]) == sum(q_prod[p,t] for p in 1:P))
+@constraint(model_1, Energy_Equilibrium[n in 1:B, t in 1:T], sum(q_demand[d,t] for d in 1:D) + sum(Lines_Reactance[n,m]*(theta_bus[n,t] - theta_bus[m,t]) for m in 1:B) == sum(q_prod[p,t] for p in 1:P))
 
 #Ramp limit constraint on the difference between the total energy producted at t and at t-1 
 @constraint(model_1, Ramp_limit[p in 1:P, t in 2:T], ramp_limit[p]>=(q_prod[p,t]+q_electrolyzer_prod[p,t]-q_prod[p,t-1]-q_electrolyzer_prod[p,t-1])>=-ramp_limit[p])
@@ -202,6 +202,8 @@ end
 #angle constraints
 @constraint(model_1, angle_ref[t in 1:T], theta_bus[1,t]==0)
 
+# capacity constraints
+@constraint(model_1, Capacity_constraint[n in 1:B, m in 1:B, t in 1:T], abs(Lines_Reactance[n,m]*(theta_bus[n,t] - theta_bus[m,t])) <= Lines_Capacity[n,m])
 
 
 # Solving the model
