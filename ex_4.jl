@@ -88,9 +88,9 @@ ramp_limit = [120   120 350	240	60	155	155	280	280	300	180	240 200 200 200 200 2
 
 #Electrolyzer demand
 demand_electrolyzer = zeros(P)
-demand_electrolyzer[P] = 28 #T
-demand_electrolyzer[P-1] = 45 #T
-demand_electrolyzer[P-2] = 50 #T
+demand_electrolyzer[P] = 28 #in T
+demand_electrolyzer[P-1] = 45 #in T
+demand_electrolyzer[P-2] = 50 #in T
 
 """ Task 4 constraints """
 #Number of busses
@@ -243,12 +243,11 @@ if termination_status(model_1) == MOI.OPTIMAL
             for m in 1:B
                 Power_flow[m] = Lines_Reactance[b,m]*(value.(theta_bus[b,i]) - value.(theta_bus[m,i]))
             end
-            println("Power flow : $(Power_flow)")
+            println("$(Power_flow)")
         end
-        println("Market price : $(Market_price[i,:])") 
+        println("Market Price : $(Market_price[i,:])") 
         println("Prod : $(value.(q_prod[:,i]))")
         println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
     end
 
 end
-
