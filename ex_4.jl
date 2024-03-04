@@ -152,8 +152,8 @@ Lines_Capacity = zeros(B,B)
 
 for i in 1:length(Lines_data[1,:])
     #Write the symetrical matrix
-    Lines_Reactance[floor(Int,Lines_data[1,i]),floor(Int,Lines_data[2,i])]=Lines_data[3,i]
-    Lines_Reactance[floor(Int,Lines_data[2,i]),floor(Int,Lines_data[1,i])]=Lines_data[3,i]
+    Lines_Reactance[floor(Int,Lines_data[1,i]),floor(Int,Lines_data[2,i])]=1/Lines_data[3,i]
+    Lines_Reactance[floor(Int,Lines_data[2,i]),floor(Int,Lines_data[1,i])]=1/Lines_data[3,i]
 end
 
 
@@ -164,7 +164,7 @@ for i in 1:length(Lines_data[1,:])
     Lines_Capacity[floor(Int,Lines_data[2,i]),floor(Int,Lines_data[1,i])]=Lines_data[4,i]
 end
 
-
+println(Lines_Capacity)
 """ Variables """
 
 #Quantity of energy producted that goes into the grid in MWh
@@ -247,6 +247,8 @@ if termination_status(model_1) == MOI.OPTIMAL
         println("Market Price : $(Market_price[i,:])") 
         println("Prod : $(value.(q_prod[:,i]))")
         println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
+        println("Prod : $(sum(value.(q_prod[p,i]) for p in 1:P))")
+        println("Demand : $(sum(value.(q_demand[d,i]) for d in 1:D))")
     end
 
 end

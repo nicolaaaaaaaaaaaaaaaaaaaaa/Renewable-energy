@@ -152,8 +152,8 @@ Lines_Capacity = zeros(B,B)
 
 for i in 1:length(Lines_data[1,:])
     #Write the symetrical matrix
-    Lines_Reactance[floor(Int,Lines_data[1,i]),floor(Int,Lines_data[2,i])]=Lines_data[3,i]
-    Lines_Reactance[floor(Int,Lines_data[2,i]),floor(Int,Lines_data[1,i])]=Lines_data[3,i]
+    Lines_Reactance[floor(Int,Lines_data[1,i]),floor(Int,Lines_data[2,i])]=1/Lines_data[3,i]
+    Lines_Reactance[floor(Int,Lines_data[2,i]),floor(Int,Lines_data[1,i])]=1/Lines_data[3,i]
 end
 
 
@@ -192,7 +192,7 @@ sum(Lines_Capacity[m,n] for m in List_zones[1], n in List_zones[3]) sum(Lines_Ca
 
 """ Objective function """
 
-@objective(model_1, Max, sum(demand_utilities[i,t]*q_demand[i,t] for i in 1:D, t in 1:T) - sum(prod_price[i]*(q_prod[i,t]+ q_electrolyzer_prod[i,t]) for i in 1:P, t in 1:T))
+@objective(model_1, Max, sum(demand_utilities[i,t]*q_demand[i,t] for i in 1:D, t in 1:T) - sum(prod_price[i]*(q_prod[i,t]) for i in 1:P, t in 1:T))
 
 """ Constraints """
 #Limit of the quantity of energy producted
@@ -203,13 +203,9 @@ sum(Lines_Capacity[m,n] for m in List_zones[1], n in List_zones[3]) sum(Lines_Ca
 
 #Equilibrium of the energy on the grid
 @constraint(model_1, Energy_Equilibrium[z in 1:Z, t in 1:T], sum(sum(q_demand[d,t] for d in nodes[2][k]) for k in List_zones[z]) + sum(f_a_b[z,y,t] for y in Z) == sum(sum(q_prod[p,t] for p in nodes[1][k]) for k in List_zones[z]))
-""" 
-ATTENTION PLEASE
-this code is not working
-Try to remove the double sum while using a list listing all the loads and generators per zone
-"""
+
 #Ramp limit constraint on the difference between the total energy producted at t and at t-1 
-@constraint(model_1, Ramp_limit[p in 1:P, t in 2:T], ramp_limit[p]>=(q_prod[p,t]+q_electrolyzer_prod[p,t]-q_prod[p,t-1]-q_electrolyzer_prod[p,t-1])>=-ramp_limit[p])
+@constraint(model_1, Ramp_limit[p in 1:P, t in 2:T], ramp_limit[p]>=(q_prod[p,t]-q_prod[p,t-1])>=-ramp_limit[p])
 
 #Electrolyzer constraint, the demand for hydrogen should be met by the end of the day by the concerned wind farm 
 @constraint(model_1, Demand_electrolyzer[p in 1:P], demand_electrolyzer[p]==sum(q_electrolyzer_prod[p,t] for t in 1:T)*18/1000)
@@ -218,7 +214,8 @@ Try to remove the double sum while using a list listing all the loads and genera
 @constraint(model_1, Capacity_constraint[z in 1:Z, y in 1:Z, t in 1:T], -ATC_zones[z,y]<= f_a_b[z,y,t] <= ATC_zones[z,y])
 
 #Exchanges between two busses
-@constraint(model_1, Exchanges[z in 1:Z, y in 1:Z, t in 1:T], -f_a_b[z,y,t]== f_a_b[y,z,t])
+@constraint(model_1, Exchanges[z in 1:Z, y in 1:Z, t in 1:T], -f_a_b[z,y,t] == f_a_b[y,z,t])
+
 
 # Solving the model
 optimize!(model_1)
@@ -248,6 +245,8 @@ if termination_status(model_1) == MOI.OPTIMAL
 
     Market_price=zeros(Float64,(T,Z))
     Power_Exchanges=zeros(Float64,(T,Z,Z))
+    Production=zeros(Float64,(T,Z))
+    Demand=zeros(Float64,(T,Z))
     # Display other information for the current time step
     for i in 1:T
         println("Step : $(i)")
@@ -256,11 +255,24 @@ if termination_status(model_1) == MOI.OPTIMAL
             for y in 1:Z    
                 Power_Exchanges[i,z,y]=value.(f_a_b[z,y,i])
             end
+            for k in List_zones[z]
+                for p in nodes[1][k]
+                    Production[i,z]+=value.(q_prod[p,i])
+                    
+                end
+                for d in nodes[2][k]
+                    Demand[i,z]+=value.(q_demand[d,i])
+                end                
+            end
         end
         println("Power Exchanges : $(Power_Exchanges[i,:,:])") 
         println("Market Price : $(Market_price[i,:])") 
-        #println("Prod : $(value.(q_prod[:,i]))")
-        #println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
+        println("Demand : $(Demand[i,:])")
+        println("Production : $(Production[i,:])")
+        println("Prod : $(sum(value.(q_prod[p,i]) for p in 1:P))")
+        println("Demand : $(sum(value.(q_demand[d,i]) for d in 1:D))")
+        println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
+
     end
 
 end
