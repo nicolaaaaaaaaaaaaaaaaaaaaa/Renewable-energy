@@ -205,7 +205,6 @@ end
 # capacity constraints
 @constraint(model_1, Capacity_constraint[n in 1:B, m in 1:B, t in 1:T], -Lines_Capacity[n,m]<= Lines_Reactance[n,m]*(theta_bus[n,t] - theta_bus[m,t]) <= Lines_Capacity[n,m])
 
-
 # Solving the model
 optimize!(model_1)
 

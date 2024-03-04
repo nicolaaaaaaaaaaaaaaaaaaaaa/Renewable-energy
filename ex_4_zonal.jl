@@ -217,6 +217,8 @@ Try to remove the double sum while using a list listing all the loads and genera
 # capacity constraints
 @constraint(model_1, Capacity_constraint[z in 1:Z, y in 1:Z, t in 1:T], -ATC_zones[z,y]<= f_a_b[z,y,t] <= ATC_zones[z,y])
 
+#Exchanges between two busses
+@constraint(model_1, Exchanges[z in 1:Z, y in 1:Z, t in 1:T], -f_a_b[z,y,t]== f_a_b[y,z,t])
 
 # Solving the model
 optimize!(model_1)
