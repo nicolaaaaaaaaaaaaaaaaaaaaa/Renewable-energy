@@ -72,6 +72,7 @@ Time_load = [1775.835   1669.815	1590.300	1563.795	1563.795	1590.300	1961.370	22
 #Compute the demand matrix with time dependancy
 demand_max= (Time_load' * demand_repartition/100)'
 
+
 #For step one we looked at hour 12 so now we are just creating a coefficient in order to make the utility time dependent
 coefficient=Time_load/Time_load[12]
 
@@ -83,6 +84,8 @@ D=length(demand_utility)
 
 
 """ Task 2 constraints """
+# do we need them???
+
 
 #ramp limit in MW/h
 ramp_limit = [120  120 350	240	60	155	155	280	280	300	180	240 200 200 200 200 200 200]
@@ -105,75 +108,106 @@ hydrogen_limit = 100 #MW
 """ Task 5 constraints """
 # set hour of interest
 time = 12
+day_ahead_prod = [0.0,  0.0, 0.0, 0.0, 0.0, 155.0, 155.0, 400.0, 400.0, 300.0, 310.0, 0.0, 134.0, 142.0, 146.0, 0.0, 109.57, 138.0]
+#  prod_capacity=[152   152  350  591  60   155    155    400    400     300    310    350 200     200    200    200   200    200]
 
-# multiply production matrix by balancing coefficients, having 1 generator = 0, wind farm with increased/decreased production
-balancing_coefficients = ones(P,1)
-balancing_coefficients[9] = 0
-balancing_coefficients[13:15] .= 0.9
-balancing_coefficients[16:18] .= 1.15
+day_ahead_demand = [95.68, 85.61, 158.63, 0.0,     0.0, 120.86, 110.79, 151.08, 153.6, 171.22, 234.17, 171.22, 279.5, 88.13, 294.6, 161.15, 113.31]
+#                  [95.68, 85.61, 158.63, 65.47, 62.95, 120.86, 110.79, 151.08, 153.6, 171.22, 234.17, 171.22, 279.5, 88.13, 294.6, 161.15, 113.31]
+#println(round.(demand_max[:, time], digits=2))
+# which one is the proper one???
 
+
+# compute actual production
+actual_coefficients = ones(P)
+actual_coefficients[9] = 0
+actual_coefficients[13:15] .= 0.9
+actual_coefficients[16:18] .= 1.15
+actual_prod_capacities = prod_capacities[:,time] .*actual_coefficients
 
 # compute deltaP
-deltaP = sum(prod_capacities[:,time] - prod_capacities[:,time] .*balancing_coefficients)
-println("deltaP  ",deltaP)
+deltaP = sum(prod_capacities[:,time] - actual_prod_capacities)
 
-# upward balancing service for
-upward_coefficients = ones(P,1)
+
+# compute upward and downward capacity limit (producecer 9 is the failure)
+prod_capacities_up = zeros(P)
+prod_capacities_down = zeros(P)
+for i in 1:P-6
+    prod_capacities_up[i] = actual_prod_capacities[i] - day_ahead_prod[i]
+    prod_capacities_down[i] = day_ahead_prod[i]
+    # is it actual? is it day_ahead_prod ???????
+end
+
+prod_capacities_up[9] = 0
+prod_capacities_down[9] = 0
+
+#println(prod_capacities_up)
+#println(prod_capacities_down)
+
+# compute curtailment capacity
+#demand_capacities_up = demand_max[:, time]
+demand_capacities_up = day_ahead_demand
+
+# upward price producer
+upward_coefficients = ones(P)
 upward_coefficients[1:12] .= 1.1
-upward_price = prod_price .*upward_coefficients
+upward_price = prod_price' .*upward_coefficients
 
-println(size(prod_price))
-println(size(upward_coefficients))
-
-# downward balancing service
-# production for task 2, time=12 [0.0, 0.0, 0.0, 0.0, 0.0, 155.0, 155.0, 400.0, 400.0, 300.0, 310.0, 0.0, 134.0, 142.0, 146.0, 0.0, 109.55827499999987, 138.0]
+# downward price producer
 downward_coefficients = zeros(P)
-downward_coefficients[6:11] .= 0.85
-downward_price = prod_price .*downward_coefficients
-
-
-#println(upward_price)
+for i in 1:P-6
+    if day_ahead_prod[i] != 0
+        downward_coefficients[i] = 0.87
+    end
+end
+downward_price = prod_price' .*downward_coefficients
 #println(downward_price)
 
 
+# curtailment cost
+curt_cost = ones(D)*400
 
-#=
+
+
 
 """ Variables """
 
 #Quantity of energy producted that goes into the grid in MWh
-@variable(model_1, q_prod[1:P,1:T]>=0)
+@variable(model_1, q_prod_up[1:P]>=0)
+@variable(model_1, q_prod_down[1:P]>=0)
 
 #Quantity of energy consumed by the demand in MWh
-@variable(model_1, q_demand[1:D,1:T]>=0)
+@variable(model_1, q_demand[1:D]>=0)
 
 #Quantity of energy producted by the producers for the wind turbines' electrolyzer in MWh 
-@variable(model_1, q_electrolyzer_prod[1:P,1:T]>=0)
+#@variable(model_1, q_electrolyzer_prod[1:P,1:T]>=0)
+
 
 
 
 """ Objective function """
 
-@objective(model_1, Max, sum(demand_utilities[i,t]*q_demand[i,t] for i in 1:D, t in 1:T) - sum(prod_price[i]*(q_prod[i,t]+ q_electrolyzer_prod[i,t]) for i in 1:P, t in 1:T))
+@objective(model_1, Max, sum(q_prod_up[i]*upward_price[i] - q_prod_down[i]*downward_price[i] for i in 1:P) + sum(q_demand[j]*curt_cost[j] for j in 1:D))
+
 
 """ Constraints """
 #Limit of the quantity of energy producted
-@constraint(model_1, Production_limit[p in 1:P, t in 1:T], prod_capacities[p,t]>=q_prod[p,t]+q_electrolyzer_prod[p,t])
+@constraint(model_1, Production_limit_up[p in 1:P], prod_capacities_up[p]>= q_prod_up[p])
+@constraint(model_1, Production_limit_down[p in 1:P], prod_capacities_down[p]>= q_prod_down[p])
 
-#Limit of the quantity of energy consumed
-@constraint(model_1, Demand_limit[d in 1:D, t in 1:T], demand_max[d,t]>=q_demand[d,t])
+# curtailed energy 
+@constraint(model_1, Demand_limit[d in 1:D], demand_capacities_up[d]>= q_demand[d])
 
 #Equilibrium of the energy on the grid
-@constraint(model_1, Energy_Equilibrium[t in 1:T], sum(q_demand[d,t] for d in 1:D) == sum(q_prod[p,t] for p in 1:P))
+@constraint(model_1, Energy_Equilibrium, sum(q_prod_up[p] - q_prod_down[p] for p in 1:P) + sum(q_demand[d] for d in 1:D) == deltaP)
 
-#Ramp limit constraint on the difference between the total energy producted at t and at t-1 
-@constraint(model_1, Ramp_limit[p in 1:P, t in 2:T], ramp_limit[p]>=(q_prod[p,t]+q_electrolyzer_prod[p,t]-q_prod[p,t-1]-q_electrolyzer_prod[p,t-1])>=-ramp_limit[p])
-
-#Electrolyzer constraint, the demand for hydrogen should be met by the end of the day by the concerned wind farm 
-@constraint(model_1, Demand_electrolyzer[p in 1:P], demand_electrolyzer[p]==sum(q_electrolyzer_prod[p,t] for t in 1:T)*18/1000)
-
-#Electrolyzer production Limit
-@constraint(model_1, Hydrogen_limit[p in 1:P, t in 1:T], hydrogen_limit>=q_electrolyzer_prod[p,t])
+# #Ramp limit constraint on the difference between the total energy producted at t and at t-1 
+# @constraint(model_1, Ramp_limit[p in 1:P, t in 2:T], ramp_limit[p]>=(q_prod[p,t]+q_electrolyzer_prod[p,t]-q_prod[p,t-1]-q_electrolyzer_prod[p,t-1])>=-ramp_limit[p])
+# 
+# #Electrolyzer constraint, the demand for hydrogen should be met by the end of the day by the concerned wind farm 
+# @constraint(model_1, Demand_electrolyzer[p in 1:P], demand_electrolyzer[p]==sum(q_electrolyzer_prod[p,t] for t in 1:T)*18/1000)
+# 
+# #Electrolyzer production Limit
+# @constraint(model_1, Hydrogen_limit[p in 1:P, t in 1:T], hydrogen_limit>=q_electrolyzer_prod[p,t])
 
 # Solving the model
 optimize!(model_1)
@@ -188,30 +222,19 @@ println("Objective value: ", JuMP.objective_value(model_1))
 if termination_status(model_1) == MOI.OPTIMAL
     println("Optimal solution found")
     
-    # Display of the results in a text file
+    #script_directory = @__DIR__
+    #file_path = joinpath(script_directory, "output.txt")
+    #file = open(file_path, "w")
+    #println(file,"Maximal Welfare : $(round.(objective_value(model_1), digits=2))")
+    #println(file,"-----------------")
+    #Market_price=zeros(Float64,24)
     
-    # Get the directory of the current script
-    script_directory = @__DIR__
-    # Construct the full file path
-    file_path = joinpath(script_directory, "output.txt")
-    # Open or create a text file
-    file = open(file_path, "w")
 
-    # Write inside the text file
-    println(file,"Maximal Welfare : $(round.(objective_value(model_1), digits=2))")
-    println(file,"-----------------")
 
-    Market_price=zeros(Float64,24)
-
-    # Display other information for the current time step
-    for i in 1:T
-        Market_price[i]=-dual(Energy_Equilibrium[i])
-        println("Step : $(i)    Market price : $(Market_price[i])")  
-        println("Prod : $(value.(q_prod[:,i]))")
-        println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
-
-    end
+    Market_price=-dual(Energy_Equilibrium)
+    println("Market price : $(Market_price)")
+    println("Prod up : $(value.(q_prod_up))")
+    println("Prod down : $(value.(q_prod_down))")
+    println("Prod curt : $(value.(q_demand))")
 
 end
-
-=#
