@@ -134,7 +134,6 @@ prod_capacities_down = zeros(P)
 for i in 1:P-6
     prod_capacities_up[i] = actual_prod_capacities[i] - day_ahead_prod[i]
     prod_capacities_down[i] = day_ahead_prod[i]
-    # is it actual? is it day_ahead_prod ???????
 end
 
 prod_capacities_up[9] = 0
@@ -148,7 +147,7 @@ prod_capacities_down[9] = 0
 demand_capacities_up = day_ahead_demand
 
 # upward price producer
-upward_coefficients = ones(P)
+upward_coefficients = zeros(P)
 upward_coefficients[1:12] .= 1.1
 upward_price = prod_price' .*upward_coefficients
 
@@ -178,10 +177,7 @@ curt_cost = ones(D)*400
 #Quantity of energy consumed by the demand in MWh
 @variable(model_1, q_demand[1:D]>=0)
 
-#Quantity of energy producted by the producers for the wind turbines' electrolyzer in MWh 
-#@variable(model_1, q_electrolyzer_prod[1:P,1:T]>=0)
-
-
+# other task 2 variables are considered in the day-ahead production and demand
 
 
 """ Objective function """
