@@ -202,7 +202,8 @@ sum(Lines_Capacity[m,n] for m in List_zones[1], n in List_zones[3]) sum(Lines_Ca
 @constraint(model_1, Demand_limit[d in 1:D, t in 1:T], demand_max[d,t]>=q_demand[d,t])
 
 #Equilibrium of the energy on the grid
-@constraint(model_1, Energy_Equilibrium[z in 1:Z, t in 1:T], sum(sum(q_demand[d,t] for d in nodes[2][k]) for k in List_zones[z]) + sum(f_a_b[z,y,t] for y in Z) == sum(sum(q_prod[p,t] for p in nodes[1][k]) for k in List_zones[z]))
+@constraint(model_1, Energy_Equilibrium[z in 1:Z, t in 1:T], sum(sum(q_demand[d,t] for d in nodes[2][k]) for k in List_zones[z] if !isempty(nodes[2][k])) + sum(f_a_b[z,y,t] for y in 1:Z) == sum(sum(q_prod[p,t] for p in nodes[1][k]) for k in List_zones[z] if !isempty(nodes[2][k])))
+
 
 #Ramp limit constraint on the difference between the total energy producted at t and at t-1 
 @constraint(model_1, Ramp_limit[p in 1:P, t in 2:T], ramp_limit[p]>=(q_prod[p,t]-q_prod[p,t-1])>=-ramp_limit[p])
@@ -210,7 +211,7 @@ sum(Lines_Capacity[m,n] for m in List_zones[1], n in List_zones[3]) sum(Lines_Ca
 #Electrolyzer constraint, the demand for hydrogen should be met by the end of the day by the concerned wind farm 
 @constraint(model_1, Demand_electrolyzer[p in 1:P], demand_electrolyzer[p]==sum(q_electrolyzer_prod[p,t] for t in 1:T)*18/1000)
 
-# capacity constraints
+#capacity constraints
 @constraint(model_1, Capacity_constraint[z in 1:Z, y in 1:Z, t in 1:T], -ATC_zones[z,y]<= f_a_b[z,y,t] <= ATC_zones[z,y])
 
 #Exchanges between two busses
@@ -265,14 +266,21 @@ if termination_status(model_1) == MOI.OPTIMAL
                 end                
             end
         end
+        
         println("Power Exchanges : $(Power_Exchanges[i,:,:])") 
         println("Market Price : $(Market_price[i,:])") 
         println("Demand : $(Demand[i,:])")
         println("Production : $(Production[i,:])")
         println("Prod : $(sum(value.(q_prod[p,i]) for p in 1:P))")
         println("Demand : $(sum(value.(q_demand[d,i]) for d in 1:D))")
-        println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
-
+        #println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
+        
+        #=
+        println(sum(sum(value.(q_demand[d,i]) for d in nodes[2][k]) for k in List_zones[1]))
+        
+        println(value.(q_demand[:,i]))
+        println(value.(q_prod[:,i]))
+            =#
     end
 
 end
