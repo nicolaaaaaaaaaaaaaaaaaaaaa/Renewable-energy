@@ -182,7 +182,7 @@ curt_cost = ones(D)*400
 
 """ Objective function """
 
-@objective(model_1, Max, sum(q_prod_up[i]*upward_price[i] - q_prod_down[i]*downward_price[i] for i in 1:P) + sum(q_demand[j]*curt_cost[j] for j in 1:D))
+@objective(model_1, Min, sum(q_prod_up[i]*upward_price[i] - q_prod_down[i]*downward_price[i] for i in 1:P) + sum(q_demand[j]*curt_cost[j] for j in 1:D))
 
 
 """ Constraints """
@@ -227,7 +227,7 @@ if termination_status(model_1) == MOI.OPTIMAL
     
 
 
-    Market_price=-dual(Energy_Equilibrium)
+    Market_price=dual(Energy_Equilibrium)
     println("Market price : $(Market_price)")
     println("Prod up : $(value.(q_prod_up))")
     println("Prod down : $(value.(q_prod_down))")
