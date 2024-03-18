@@ -127,6 +127,7 @@ r_price_down =[11 11  16  17  23  7   7   0   0   0   8   8  0 0 0 0 0 0 ]
 @constraint(model_1, Energy_Equilibrium_down[t in 1:T], sum(r_prod_down[p,t] for p in 1:P)== r_req_down[t])
 
 # Solving the model
+
 optimize!(model_1)
 
 # Printing the termination status
@@ -136,6 +137,11 @@ optimize!(model_1)
 
 if termination_status(model_1) == MOI.OPTIMAL
     println("Optimal solution for step 1 found")
+
+    Market_price_up=zeros(Float64,(T))
+    Market_price_down=zeros(Float64,(T))
+    reserve_optimal_up = zeros(Float64,(P,T))
+    reserve_optimal_down = zeros(Float64,(P,T))
     
 
     # Display other information for the current time step
@@ -178,6 +184,7 @@ if termination_status(model_1) == MOI.OPTIMAL
     @constraint(model_2, Energy_Equilibrium[t in 1:T], sum(q_demand2[d,t] for d in 1:D) == sum(q_prod2[p,t] for p in 1:P))
 
     # Solving the model
+
     optimize!(model_2)
 
     # Printing the termination status
