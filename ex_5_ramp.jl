@@ -134,18 +134,17 @@ demand_capacities_up = day_ahead_demand
 
 # upward price producer
 upward_coefficients = zeros(P)
-upward_coefficients[1:12] .= 1.1
-upward_price = prod_price' .*upward_coefficients
+upward_coefficients[1:12] .= 0.1
+upward_price = ones(P)*Market_price_day_ahead +prod_price' .*upward_coefficients
 
 # downward price producer
 downward_coefficients = zeros(P)
 for i in 1:P-6
     if day_ahead_prod[i] != 0
-        downward_coefficients[i] = 0.87
+        downward_coefficients[i] = 0.13
     end
 end
-downward_price = prod_price' .*downward_coefficients
-
+downward_price = ones(P)*Market_price_day_ahead - prod_price' .*downward_coefficients
 # curtailment cost
 curt_cost = ones(D)*400
 
