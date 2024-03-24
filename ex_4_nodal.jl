@@ -4,6 +4,7 @@ using JuMP
 using Gurobi
 using Printf
 using XLSX
+using Plots
 
 #units
 
@@ -89,8 +90,10 @@ ramp_limit = [120   120 350	240	60	155	155	280	280	300	180	240 200 200 200 200 2
 #Electrolyzer demand
 demand_electrolyzer = zeros(P)
 demand_electrolyzer[P] = 28 #in T
-demand_electrolyzer[P-1] = 45 #in T
-demand_electrolyzer[P-2] = 50 #in T
+demand_electrolyzer[P-1] = 40 #in T
+demand_electrolyzer[P-2] = 43 #in T
+
+hydrogen_limit = 100 #in MW
 
 """ Task 4 constraints """
 #Number of busses
@@ -199,6 +202,9 @@ println(Lines_Capacity)
 #Electrolyzer constraint, the demand for hydrogen should be met by the end of the day by the concerned wind farm 
 @constraint(model_1, Demand_electrolyzer[p in 1:P], demand_electrolyzer[p]==sum(q_electrolyzer_prod[p,t] for t in 1:T)*18/1000)
 
+#Electrolyzer production Limit
+@constraint(model_1, Hydrogen_limit[p in 1:P, t in 1:T], hydrogen_limit>=q_electrolyzer_prod[p,t])
+
 #angle constraints
 @constraint(model_1, angle_ref[t in 1:T], theta_bus[1,t]==0)
 
@@ -242,7 +248,7 @@ if termination_status(model_1) == MOI.OPTIMAL
             for m in 1:B
                 Power_flow[m] = Lines_Reactance[b,m]*(value.(theta_bus[b,i]) - value.(theta_bus[m,i]))
             end
-            println("$(Power_flow)")
+            #println("$(Power_flow)")
         end
         println("Market Price : $(Market_price[i,:])") 
         println("Prod : $(value.(q_prod[:,i]))")
@@ -251,4 +257,5 @@ if termination_status(model_1) == MOI.OPTIMAL
         println("Demand : $(sum(value.(q_demand[d,i]) for d in 1:D))")
     end
 
+    plot([t for t in 1:T ], Market_price, label=["Node 1" "Node 2" "Node 3" "Node 4" "Node 5" "Node 6" "Node 7" "Node 8" "Node 9" "Node 10" "Node 11" "Node 12" "Node 13" "Node 14" "Node 15" "Node 16" "Node 17" "Node 18" "Node 19" "Node 20" "Node 21" "Node 22" "Node 23" "Node 24"], xlabel="Time", ylabel="Market Price", title="Market Prices per Node")
 end
