@@ -4,6 +4,7 @@ using JuMP
 using Gurobi
 using Printf
 using XLSX
+using Plots
 
 #units
 
@@ -85,12 +86,13 @@ D=length(demand_utility)
 #ramp limit in MW/h
 ramp_limit = [120   120 350	240	60	155	155	280	280	300	180	240 200 200 200 200 200 200]
 
-
 #Electrolyzer demand
 demand_electrolyzer = zeros(P)
 demand_electrolyzer[P] = 28 #in T
-demand_electrolyzer[P-1] = 45 #in T
-demand_electrolyzer[P-2] = 50 #in T
+demand_electrolyzer[P-1] = 40 #in T
+demand_electrolyzer[P-2] = 43 #in T
+
+hydrogen_limit = 100 #in MW
 
 """ Task 4 constraints nodal"""
 #Number of busses
@@ -211,6 +213,9 @@ sum(Lines_Capacity[m,n] for m in List_zones[1], n in List_zones[3]) sum(Lines_Ca
 #Electrolyzer constraint, the demand for hydrogen should be met by the end of the day by the concerned wind farm 
 @constraint(model_1, Demand_electrolyzer[p in 1:P], demand_electrolyzer[p]==sum(q_electrolyzer_prod[p,t] for t in 1:T)*18/1000)
 
+#Electrolyzer production Limit
+@constraint(model_1, Hydrogen_limit[p in 1:P, t in 1:T], hydrogen_limit>=q_electrolyzer_prod[p,t])
+
 #capacity constraints
 @constraint(model_1, Capacity_constraint[z in 1:Z, y in 1:Z, t in 1:T], -ATC_zones[z,y]<= f_a_b[z,y,t] <= ATC_zones[z,y])
 
@@ -273,15 +278,10 @@ if termination_status(model_1) == MOI.OPTIMAL
         println("Production : $(Production[i,:])")
         println("Prod : $(sum(value.(q_prod[p,i]) for p in 1:P))")
         println("Demand : $(sum(value.(q_demand[d,i]) for d in 1:D))")
-        #println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
+        println("Elec : $(value.(q_electrolyzer_prod[:,i]))")
         
-        #=
-        println(sum(sum(value.(q_demand[d,i]) for d in nodes[2][k]) for k in List_zones[1]))
-        
-        println(value.(q_demand[:,i]))
-        println(value.(q_prod[:,i]))
-            =#
     end
 
+    plot([t for t in 1:T ], Market_price, label=["Zone 1" "Zone 2" "Zone 3"], xlabel="Time", ylabel="Market Price", title="Market Prices per Zone")
 end
 
