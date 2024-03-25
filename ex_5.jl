@@ -208,27 +208,26 @@ if termination_status(model_1) == MOI.OPTIMAL
 
     # production balanced for up and down production
     production_balanced = actual_prod + value.(q_prod_up) - value.(q_prod_down)
-
     # one price 
-    profit1 = production_balanced .* Market_price
+    profit1 = (production_balanced-day_ahead_prod).* Market_price + day_ahead_prod .* Market_price_day_ahead .- [production_balanced[k] * prod_price[k] for k in 1:P]
     println("one price prifit : $(round.(profit1, digits=2))")
-
+    println()
     # two price
     Market_price_adjusted = ones(P)*Market_price
     if deltaP >= 0  # power deficit
         for i in 1:P
-            if production_balanced[i] > day_ahead_prod[i]
+            if actual_prod[i] > day_ahead_prod[i]
                 Market_price_adjusted[i] = Market_price_day_ahead
             end               
         end
     else            # power excess
         for i in 1:P
-            if production_balanced[i] < day_ahead_prod[i]
+            if actual_prod[i] < day_ahead_prod[i]
                 Market_price_adjusted[i] = Market_price_day_ahead
             end               
         end
     end
-    profit2 = production_balanced .* Market_price_adjusted
+    profit2 = (production_balanced-day_ahead_prod) .* Market_price_adjusted + day_ahead_prod.* Market_price_day_ahead  .- [production_balanced[k] * prod_price[k] for k in 1:P]
     println("two price prifit : $(round.(profit2, digits=2))")
 end
 
