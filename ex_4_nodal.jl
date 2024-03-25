@@ -184,7 +184,7 @@ println(Lines_Capacity)
 
 """ Objective function """
 
-@objective(model_1, Max, sum(demand_utilities[i,t]*q_demand[i,t] for i in 1:D, t in 1:T) - sum(prod_price[i]*(q_prod[i,t]) for i in 1:P, t in 1:T))
+@objective(model_1, Max, sum(demand_utilities[i,t]*q_demand[i,t] for i in 1:D, t in 1:T) - sum(prod_price[i]*(q_prod[i,t]+q_electrolyzer_prod[p,t]) for i in 1:P, t in 1:T))
 
 """ Constraints """
 #Limit of the quantity of energy producted
