@@ -104,9 +104,9 @@ time = 12
 
 # results from task 2 for set hour
 
-day_ahead_prod = [0.0,  0.0, 0.0, 0.0, 0.0, 155.0, 155.0, 400.0, 400.0, 300.0, 310.0, 0.0, 134.0, 142.0, 146.0, 0.0, 109.57, 138.0]
+day_ahead_prod = [0.0, 0.0, 0.0, 0.0, 0.0, 155.0, 155.0, 400.0, 400.0, 300.0, 310.0, 145.55827499999987, 134.0, 142.0, 146.0, 26.0, 38.0, 38.0]
 day_ahead_demand = [95.68, 85.61, 158.63, 0.0,     0.0, 120.86, 110.79, 151.08, 153.6, 171.22, 234.17, 171.22, 279.5, 88.13, 294.6, 161.15, 113.31]
-Market_price_day_ahead = 10.52
+Market_price_day_ahead = 10.89
 
 # compute actual production
 actual_coefficients = ones(P)
@@ -136,6 +136,7 @@ demand_capacities_up = day_ahead_demand
 upward_coefficients = zeros(P)
 upward_coefficients[1:12] .= 0.1
 upward_price = ones(P)*Market_price_day_ahead +prod_price' .*upward_coefficients
+upward_price[13:18] .= 0 
 
 # downward price producer
 downward_coefficients = zeros(P)
@@ -145,6 +146,7 @@ for i in 1:P-6
     end
 end
 downward_price = ones(P)*Market_price_day_ahead - prod_price' .*downward_coefficients
+downward_price[13:18] .= 0 
 # curtailment cost
 curt_cost = ones(D)*400
 
@@ -198,33 +200,35 @@ if termination_status(model_1) == MOI.OPTIMAL
     Market_price=dual(Energy_Equilibrium)
     println("balancing price : $(Market_price)")
     println("Market price d.a. : $(Market_price_day_ahead)")
-    println("Prod up      : $(value.(q_prod_up))")
+    println("upward_price : $(round.(upward_price, digits = 2))")
+    println("actual prod before imbalance   : $(actual_prod)")
+    println("day-ahead prod : $(day_ahead_prod)")
+    println("Prod up      : $(round.(value.(q_prod_up),digits = 2))")
     println("Prod down    : $(value.(q_prod_down))")
     println("Prod curt    : $(value.(q_demand))")
-
+    println("prod price : $(round.(prod_price, digits = 2))")
     # production balanced for up and down production
     production_balanced = actual_prod + value.(q_prod_up) - value.(q_prod_down)
-
     # one price 
-    profit1 = production_balanced .* Market_price
+    profit1 = (production_balanced-day_ahead_prod).* Market_price + day_ahead_prod .* Market_price_day_ahead .- [production_balanced[k] * prod_price[k] for k in 1:P]
     println("one price prifit : $(round.(profit1, digits=2))")
-
+    println()
     # two price
     Market_price_adjusted = ones(P)*Market_price
     if deltaP >= 0  # power deficit
         for i in 1:P
-            if production_balanced[i] > day_ahead_prod[i]
+            if actual_prod[i] > day_ahead_prod[i]
                 Market_price_adjusted[i] = Market_price_day_ahead
             end               
         end
     else            # power excess
         for i in 1:P
-            if production_balanced[i] < day_ahead_prod[i]
+            if actual_prod[i] < day_ahead_prod[i]
                 Market_price_adjusted[i] = Market_price_day_ahead
             end               
         end
     end
-    profit2 = production_balanced .* Market_price_adjusted
+    profit2 = (production_balanced-day_ahead_prod) .* Market_price_adjusted + day_ahead_prod.* Market_price_day_ahead  .- [production_balanced[k] * prod_price[k] for k in 1:P]
     println("two price prifit : $(round.(profit2, digits=2))")
 end
 
