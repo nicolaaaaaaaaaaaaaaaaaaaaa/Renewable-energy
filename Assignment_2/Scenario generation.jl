@@ -4,7 +4,7 @@ using Distributions
 using StatsBase
 
 T=24
-
+Capacity = 200 #MW
 #Wind power production forecast
 #https://data.fingrid.fi/en/data?datasets=245
 #We have 28 days of data
@@ -38,7 +38,7 @@ P_t_omega_real =
 3190.175	3134.25	3210.675	3355.6	3393.95	3059.25	2565.875	1928.85	1327.1	1008.45	894.525	812.1	738.75	713.45	846.675	1201.775	1753.425	2182.675	2393.8	2532.825	2358.775	2130.475	1846.8	1605.025;
 1563.65	1793.625	2126.2	2280.15	2394.45	2580.075	2484.475	2120.225	1740.45	1861.2	1967.075	1980.65	2054.725	2185.575	2534.525	2972.15	3334.65	3476.275	3528.45	3481.4	3414.1	3467.925	3541.525	3650.8
 
-]*150/7147.7
+]*Capacity/7147.7
 #7147.7 is the power capacity forecast for the days from the 02/03/2024 to the 29/03/2024
 
 #Day-ahead price forecast found on Nord pool
