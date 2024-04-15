@@ -96,6 +96,7 @@ for p in 1:NW
 end
 #In this way we will have Scenario_list[k][1] = P_t_omega_real , Scenario_list[k][2] = lambda_t_omega_DA , Scenario_list[k][3] = Scenario_system_need
 
+
 #Scenario selection
 #number of selected scenario
 NSS=250
@@ -107,6 +108,6 @@ Selected_scenarios =[[] for i=1:NSS]
 for k in 1:NSS
     Selected_scenarios[k] = Scenario_list[Index_selected[k]]
 end
-println("Selected_scenarios:")
+#=println("Selected_scenarios:")
 println()
-println(Selected_scenarios)
+println(Selected_scenarios)=#
