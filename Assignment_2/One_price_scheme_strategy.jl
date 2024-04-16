@@ -39,7 +39,7 @@ println("Objective value: ", JuMP.objective_value(model_1))
 #displaying the wanted results
 if termination_status(model_1) == MOI.OPTIMAL
     println("Optimal solution found")
-
+    expected_profit = JuMP.objective_value(model_1)
     # Generate x values from -π to π
     x = collect(Int,1:T)
 
@@ -47,6 +47,18 @@ if termination_status(model_1) == MOI.OPTIMAL
     y = [value.(p_DA[t]) for t in 1:T ]
 
     # Plot the sine function
-    plot(x, y, label="Day ahead production (MW)", xlabel="t (h)", ylabel="power (MW)", title="Sine Function", linewidth=2)
+    plot(x, y, label="Day ahead production (MW)", xlabel="t (h)", ylabel="power (MW)", title="Day ahead production (MW)", linewidth=2)
+    savefig("One_price_scheme_strategy.png")
+    println("Expected profit: $(expected_profit)")
 
+    scenarios_profit=zeros(NSS)
+    for w in 1:NSS
+        scenarios_profit[w]=sum(Selected_scenarios[w][2][t]*value.(p_DA[t])+(0.9*Selected_scenarios[w][3][t] - 1.2*(Selected_scenarios[w][3][t]-1))*Selected_scenarios[w][2][t]*value.(Delta_up[t,w])-(0.9*Selected_scenarios[w][3][t] - 1.2*(Selected_scenarios[w][3][t]-1))*Selected_scenarios[w][2][t]*value.(Delta_down[t,w]) for t in 1:T)/1000#/expected_profit
+    end
+
+    x_w = collect(Int, 1:NSS)
+    plot(x_w, scenarios_profit, label="profit distribution scenarios", xlabel="scenarios", ylabel="Profit (DKK)", title="profit distribution scenarios (DKK)", linewidth=2)
+    savefig("One_price_scheme_profit.png")
+
+    
 end
