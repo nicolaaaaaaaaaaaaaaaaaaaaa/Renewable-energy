@@ -27,6 +27,9 @@ model_1= Model(Gurobi.Optimizer)
 @constraint(model_1,production_uncertainty[t in 1:T,w in 1:NSS],Delta[t,w]==Selected_scenarios[w][1][t]-p_DA[t])
 @constraint(model_1,production_inbalanced[t in 1:T,w in 1:NSS],Delta[t,w]==Delta_up[t,w]-Delta_down[t,w])
 
+f = open("C:/Users/mathe/OneDrive - Centrale Lille/Documents/Scolarship/_46755 Renewables in electricity markets/Assignment 2/model.lp", "w")
+print(f, model_1)
+close(f)
 
 # Solving the model
 optimize!(model_1)
@@ -40,4 +43,12 @@ println("Objective value: ", JuMP.objective_value(model_1))
 #displaying the wanted results
 if termination_status(model_1) == MOI.OPTIMAL
     println("Optimal solution found")
+    # Generate x values from -π to π
+    x = collect(Int,1:T)
+
+    # Calculate y values (sine of x)
+    y = [value.(p_DA[t]) for t in 1:T ]
+
+    # Plot the sine function
+    plot(x, y, label="Day ahead production (MW)", xlabel="t (h)", ylabel="power (MW)", title="Sine Function", linewidth=2)
 end
