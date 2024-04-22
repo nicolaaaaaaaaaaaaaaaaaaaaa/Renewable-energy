@@ -45,8 +45,9 @@ function two_price_risk_analysis(beta)
     if termination_status(model_1) == MOI.OPTIMAL
         println("Optimal solution found")
         
-        expected_profit = JuMP.objective_value(model_1)
+        
         cvar = (value.(zeta)-1/(1-alpha)*sum(prob*value.(eta[w]) for w in 1:NSS))
+        expected_profit = (JuMP.objective_value(model_1)-beta*cvar)/(1-beta)
         #=
         # Generate x values from -π to π
         x = collect(Int,1:T)
@@ -73,7 +74,8 @@ function two_price_risk_analysis(beta)
     end
 end
 
-betas=[(k)/100 for k in 1:100]
+#=
+betas=[(k-1)/100 for k in 1:100]
 N=length(betas)
 step=1/100
 benefits = zeros(N)
@@ -84,6 +86,7 @@ end
 
 plot( CVAR,benefits, label="CVAR vs expected profit", xlabel="CVAR (DKK)", ylabel="expected profit (DKK)", title="CVAR vs expected profit", linewidth=2)
 savefig("Two_price_scheme_risk_analysis_0_$(N)_$(step).png")
+=#
 
 #the higher the beta is the higher the cvar is and the lower the expected profit is
 
