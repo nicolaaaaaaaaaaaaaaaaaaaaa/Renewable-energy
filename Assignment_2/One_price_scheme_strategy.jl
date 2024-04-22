@@ -48,7 +48,8 @@ if termination_status(model_1) == MOI.OPTIMAL
 
     # Plot the sine function
     plot(x, y, label="Day ahead production (MW)", xlabel="t (h)", ylabel="power (MW)", title="Day ahead production (MW)", linewidth=2)
-    savefig("One_price_scheme_strategy.png")
+    filepath = joinpath(@__DIR__, "One_price_scheme_strategy.png")
+    savefig(filepath)
     println("Expected profit: $(expected_profit)")
 
     scenarios_profit=zeros(NSS)
@@ -58,7 +59,8 @@ if termination_status(model_1) == MOI.OPTIMAL
 
     x_w = collect(Int, 1:NSS)
     plot(x_w, scenarios_profit, label="profit distribution scenarios", xlabel="scenarios", ylabel="Profit (DKK)", title="profit distribution scenarios (DKK)", linewidth=2)
-    savefig("One_price_scheme_profit.png")
+    filepath = joinpath(@__DIR__, "One_price_scheme_profit.png")
+    savefig(filepath)
 
     
 end
