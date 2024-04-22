@@ -23,3 +23,6 @@ end
 
 plot(CVAR_1,benefits_1, label="one price scheme", xlabel="CVAR (DKK)", ylabel="expected profit (DKK)", title="CVAR vs expected profit", linewidth=2)
 plot!(CVAR_2,benefits_2, label="two price scheme", xlabel="CVAR (DKK)", ylabel="expected profit (DKK)", title="CVAR vs expected profit", linewidth=2)
+
+filepath = joinpath(@__DIR__, "risk_analysis_CVAR_profit.png")
+savefig(filepath)
