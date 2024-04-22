@@ -7,7 +7,7 @@ using Distances
 using Plots
 
 include("Scenario generation.jl")
-function one_price_risk_analysis(beta)
+function two_price_risk_analysis(beta)
     prob = 1/NSS
     alpha = 0.9
     model_1= Model(Gurobi.Optimizer)
@@ -21,7 +21,7 @@ function one_price_risk_analysis(beta)
     @variable(model_1, zeta)
 
     #Objective function
-    @objective(model_1,Max,(1-beta)*sum(prob*(Selected_scenarios[w][2][t]*p_DA[t]+(0.9*Selected_scenarios[w][3][t] - 1.2*(Selected_scenarios[w][3][t]-1))*Selected_scenarios[w][2][t]*Delta_up[t,w]-(0.9*Selected_scenarios[w][3][t] - 1.2*(Selected_scenarios[w][3][t]-1))*Selected_scenarios[w][2][t]*Delta_down[t,w]) for w in 1:NSS,t in 1:T)
+    @objective(model_1,Max,(1-beta)*sum(prob*(Selected_scenarios[w][2][t]*p_DA[t]+(0.9 + 0.1*(Selected_scenarios[w][3][t]))*Selected_scenarios[w][2][t]*Delta_up[t,w]-(1.2+0.2*(Selected_scenarios[w][3][t]-1))*Selected_scenarios[w][2][t]*Delta_down[t,w]) for w in 1:NSS,t in 1:T)
     + beta*(zeta-1/(1-alpha)*sum(prob*eta[w] for w in 1:NSS)))
 
     #Constraints
@@ -78,8 +78,8 @@ step=1/100
 benefits = zeros(N)
 CVAR = zeros(N)
 for n in 1:N
-    benefits[n], CVAR[n] = one_price_risk_analysis(betas[n])
+    benefits[n], CVAR[n] = two_price_risk_analysis(betas[n])
 end
 
 plot(benefits, CVAR, label="CVAR vs expected profit", xlabel="expected profit (DKK)", ylabel="CVAR", title="CVAR vs expected profit", linewidth=2)
-savefig("One_price_scheme_risk_analysis_0_$(N)_$(step).png")
+savefig("Two_price_scheme_risk_analysis_0_$(N)_$(step).png")
