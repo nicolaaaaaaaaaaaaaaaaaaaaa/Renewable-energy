@@ -45,7 +45,7 @@ function two_price_risk_analysis(beta)
     if termination_status(model_1) == MOI.OPTIMAL
         println("Optimal solution found")
         
-        
+        p_bid = (value.(p_DA))
         cvar = (value.(zeta)-1/(1-alpha)*sum(prob*value.(eta[w]) for w in 1:NSS))
         expected_profit = (JuMP.objective_value(model_1)-beta*cvar)/(1-beta)
         #=
@@ -69,7 +69,7 @@ function two_price_risk_analysis(beta)
         plot(x_w, scenarios_profit, label="profit distribution scenarios", xlabel="scenarios", ylabel="Profit (DKK)", title="profit distribution scenarios (DKK)", linewidth=2)
         savefig("One_price_scheme_profit.png")
         =#
-        return expected_profit, cvar
+        return expected_profit, cvar, p_bid
         
     end
 end

@@ -46,6 +46,7 @@ function one_price_risk_analysis(beta)
         
         cvar = (value.(zeta)-1/(1-alpha)*sum(prob*value.(eta[w]) for w in 1:NSS))
         expected_profit = (JuMP.objective_value(model_1)-beta*cvar)/(1-beta)
+        p_bid = (value.(p_DA))
         #=
         # Generate x values from -π to π
         x = collect(Int,1:T)
@@ -67,7 +68,7 @@ function one_price_risk_analysis(beta)
         plot(x_w, scenarios_profit, label="profit distribution scenarios", xlabel="scenarios", ylabel="Profit (DKK)", title="profit distribution scenarios (DKK)", linewidth=2)
         savefig("One_price_scheme_profit.png")
         =#
-        return expected_profit, cvar
+        return expected_profit, cvar, p_bid
         
     end
 end

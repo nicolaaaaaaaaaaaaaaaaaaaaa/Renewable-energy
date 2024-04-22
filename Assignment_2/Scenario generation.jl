@@ -105,7 +105,6 @@ end
 NSS=250
 
 
-
 Index_selected = sample(1:NW*NP*NS, NSS, replace=false)
 Selected_scenarios =[]
 Unseen_scenarios = [] 
