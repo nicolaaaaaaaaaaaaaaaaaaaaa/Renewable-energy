@@ -107,10 +107,12 @@ NSS=250
 
 
 Index_selected = sample(1:NW*NP*NS, NSS, replace=false)
-Selected_scenarios =[[] for i=1:NSS]
-for k in 1:NSS
-    Selected_scenarios[k] = Scenario_list[Index_selected[k]]
+Selected_scenarios =[]
+Unseen_scenarios = [] 
+for k in 1:NW*NP*NS
+    if in(k,Index_selected)
+        push!(Selected_scenarios,Scenario_list[k])
+    else
+        push!(Unseen_scenarios,Scenario_list[k])
+    end
 end
-#=println("Selected_scenarios:")
-println()
-println(Selected_scenarios)=#
