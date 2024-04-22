@@ -27,7 +27,8 @@ model_1= Model(Gurobi.Optimizer)
 @constraint(model_1,production_uncertainty[t in 1:T,w in 1:NSS],Delta[t,w]==Selected_scenarios[w][1][t]-p_DA[t])
 @constraint(model_1,production_inbalanced[t in 1:T,w in 1:NSS],Delta[t,w]==Delta_up[t,w]-Delta_down[t,w])
 
-f = open("C:/Users/mathe/OneDrive - Centrale Lille/Documents/Scolarship/_46755 Renewables in electricity markets/Assignment 2/model.lp", "w")
+filepath = joinpath(@__DIR__, "model.lp")
+f = open(filepath, "w")
 print(f, model_1)
 close(f)
 
@@ -51,7 +52,8 @@ if termination_status(model_1) == MOI.OPTIMAL
 
     # Plot the sine function
     plot(x, y, label="Day ahead production (MW)", xlabel="t (h)", ylabel="power (MW)", title="Day ahead production (MW)", linewidth=2)
-    savefig("Two_price_scheme_strategy.png")
+    filepath = joinpath(@__DIR__, "Two_price_scheme_strategy.png")
+    savefig(filepath)
     println("Expected profit: $(JuMP.objective_value(model_1))")
 
     scenarios_profit=zeros(NSS)
@@ -61,6 +63,7 @@ if termination_status(model_1) == MOI.OPTIMAL
 
     x_w = collect(Int, 1:NSS)
     plot(x_w, scenarios_profit, label="profit distribution scenarios", xlabel="scenarios", ylabel="Profit (MDKK)", title="profit distribution scenarios (DKK)", linewidth=2)
-    savefig("Two_price_scheme_profit.png")
+    filepath = joinpath(@__DIR__, "Two_price_scheme_profit.png")
+    savefig(filepath)
 
 end
