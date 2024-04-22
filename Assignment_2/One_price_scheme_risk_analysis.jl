@@ -81,5 +81,9 @@ for n in 1:N
     benefits[n], CVAR[n] = one_price_risk_analysis(betas[n])
 end
 
-plot(benefits, CVAR, label="CVAR vs expected profit", xlabel="expected profit (DKK)", ylabel="CVAR", title="CVAR vs expected profit", linewidth=2)
+plot( CVAR,benefits, label="CVAR vs expected profit", xlabel="CVAR (DKK)", ylabel="expected profit (DKK)", title="CVAR vs expected profit", linewidth=2)
 savefig("One_price_scheme_risk_analysis_0_$(N)_$(step).png")
+
+#the higher the beta is the higher the cvar is and the lower the expected profit is
+
+#the goal of every company is to stay on this curve

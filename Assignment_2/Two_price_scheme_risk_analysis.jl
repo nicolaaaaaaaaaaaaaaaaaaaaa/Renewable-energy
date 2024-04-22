@@ -21,6 +21,7 @@ function two_price_risk_analysis(beta)
     @variable(model_1, zeta)
 
     #Objective function
+    #with the (1-beta) beta goes from 0 to 1
     @objective(model_1,Max,(1-beta)*sum(prob*(Selected_scenarios[w][2][t]*p_DA[t]+(0.9 + 0.1*(Selected_scenarios[w][3][t]))*Selected_scenarios[w][2][t]*Delta_up[t,w]-(1.2+0.2*(Selected_scenarios[w][3][t]-1))*Selected_scenarios[w][2][t]*Delta_down[t,w]) for w in 1:NSS,t in 1:T)
     + beta*(zeta-1/(1-alpha)*sum(prob*eta[w] for w in 1:NSS)))
 
@@ -72,7 +73,7 @@ function two_price_risk_analysis(beta)
     end
 end
 
-betas=[(k-1)/100 for k in 1:100]
+betas=[(k)/100 for k in 1:100]
 N=length(betas)
 step=1/100
 benefits = zeros(N)
@@ -81,5 +82,9 @@ for n in 1:N
     benefits[n], CVAR[n] = two_price_risk_analysis(betas[n])
 end
 
-plot(benefits, CVAR, label="CVAR vs expected profit", xlabel="expected profit (DKK)", ylabel="CVAR", title="CVAR vs expected profit", linewidth=2)
+plot( CVAR,benefits, label="CVAR vs expected profit", xlabel="CVAR (DKK)", ylabel="expected profit (DKK)", title="CVAR vs expected profit", linewidth=2)
 savefig("Two_price_scheme_risk_analysis_0_$(N)_$(step).png")
+
+#the higher the beta is the higher the cvar is and the lower the expected profit is
+
+#the goal of every company is to stay on this curve, if we are under this curve we have done a bad job at bidding
