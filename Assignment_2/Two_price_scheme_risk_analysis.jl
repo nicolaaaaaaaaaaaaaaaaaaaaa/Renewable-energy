@@ -7,10 +7,14 @@ using Distances
 using Plots
 
 include("Scenario generation.jl")
-function two_price_risk_analysis(beta)
+
+function two_price_risk_analysis(Selected_scenarios, beta)
     prob = 1/NSS
     alpha = 0.9
     model_1= Model(Gurobi.Optimizer)
+
+    # remove printing statement
+    set_optimizer_attribute(model_1, "OutputFlag", 0)
 
     #declare Variables
     @variable(model_1, p_DA[1:T]>=0)
@@ -36,58 +40,20 @@ function two_price_risk_analysis(beta)
     optimize!(model_1)
 
     # Printing the termination status
-    println("Status: ", JuMP.termination_status(model_1))
+    #println("Status: ", JuMP.termination_status(model_1))
 
     # Printing the objective value
-    println("Objective value: ", JuMP.objective_value(model_1))
+    #println("Objective value: ", JuMP.objective_value(model_1))
 
     #displaying the wanted results
     if termination_status(model_1) == MOI.OPTIMAL
-        println("Optimal solution found")
+        #println("Optimal solution found")
         
         p_bid = (value.(p_DA))
         cvar = (value.(zeta)-1/(1-alpha)*sum(prob*value.(eta[w]) for w in 1:NSS))
         expected_profit = (JuMP.objective_value(model_1)-beta*cvar)/(1-beta)
-        #=
-        # Generate x values from -π to π
-        x = collect(Int,1:T)
 
-        # Calculate y values (sine of x)
-        y = [value.(p_DA[t]) for t in 1:T ]
-
-        # Plot the sine function
-        plot(x, y, label="Day ahead production (MW)", xlabel="t (h)", ylabel="power (MW)", title="Day ahead production (MW)", linewidth=2)
-        savefig("One_price_scheme_strategy.png")
-        println("Expected profit: $(expected_profit)")
-
-        scenarios_profit=zeros(NSS)
-        for w in 1:NSS
-            scenarios_profit[w]=sum(Selected_scenarios[w][2][t]*value.(p_DA[t])+(0.9*Selected_scenarios[w][3][t] - 1.2*(Selected_scenarios[w][3][t]-1))*Selected_scenarios[w][2][t]*value.(Delta_up[t,w])-(0.9*Selected_scenarios[w][3][t] - 1.2*(Selected_scenarios[w][3][t]-1))*Selected_scenarios[w][2][t]*value.(Delta_down[t,w]) for t in 1:T)/1000#/expected_profit
-        end
-
-        x_w = collect(Int, 1:NSS)
-        plot(x_w, scenarios_profit, label="profit distribution scenarios", xlabel="scenarios", ylabel="Profit (DKK)", title="profit distribution scenarios (DKK)", linewidth=2)
-        savefig("One_price_scheme_profit.png")
-        =#
         return expected_profit, cvar, p_bid
-        
     end
 end
 
-#=
-betas=[(k-1)/100 for k in 1:100]
-N=length(betas)
-step=1/100
-benefits = zeros(N)
-CVAR = zeros(N)
-for n in 1:N
-    benefits[n], CVAR[n] = two_price_risk_analysis(betas[n])
-end
-
-plot( CVAR,benefits, label="CVAR vs expected profit", xlabel="CVAR (DKK)", ylabel="expected profit (DKK)", title="CVAR vs expected profit", linewidth=2)
-savefig("Two_price_scheme_risk_analysis_0_$(N)_$(step).png")
-=#
-
-#the higher the beta is the higher the cvar is and the lower the expected profit is
-
-#the goal of every company is to stay on this curve, if we are under this curve we have done a bad job at bidding
