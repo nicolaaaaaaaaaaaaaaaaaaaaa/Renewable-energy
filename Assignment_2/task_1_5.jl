@@ -9,8 +9,13 @@ using Plots
 include("Scenario generation.jl")
 include("Two_price_scheme_risk_analysis.jl")
 
+Random.seed!()
+
 
 function scenario_generation(Scenario_list, frac)
+
+    Random.seed!()
+
     # creates a seen and un-seen scenario list depending on the fraction of seen w.r.t total
     Ntot = length(Scenario_list)
     NSS = round(Int, Ntot*frac)
@@ -29,11 +34,12 @@ function scenario_generation(Scenario_list, frac)
     return Selected_scenarios, Unseen_scenarios
 end
 
-beta = 0.1
+beta = 0.7
+
 
 
 # part a => v same number of scenarios but different scenarios 
-repetitions = 100       
+repetitions = 50  
 
 expected_profit_list = []
 p_general = zeros(24)
@@ -42,11 +48,7 @@ x = collect(1:24)
 plot()
 for i in 1:repetitions
 
-    # random seed is removed and then inserted back, so the repetitions have different indexes
-    old_seed = Random.seed!()
     Selected_scenarios, Unseen_scenarios = scenario_generation(Scenario_list, 0.2)
-    Random.seed!(old_seed)
-
     expected_profit,_,p_bid=two_price_risk_analysis(Selected_scenarios, beta)
 
     p_general .+= p_bid/repetitions
@@ -73,8 +75,12 @@ expected_std = std(expected_profit_list)
 println("expected_profit:    mean =$expected_mean and std = $expected_std") 
 
 
+
+#=
 # part b => different fraction seen / unseen
-fraction = range(start=0.1, stop=0.95, step=0.01)
+start = 0.05    # it's the lowest
+stop = 0.99
+fraction = range(start=start, stop=stop, step=0.01)
 #fraction = [0.1, 0.2]
 
 expected_profit_list = []
@@ -82,23 +88,23 @@ expected_profit_us_list = []
 computational_time_list = []
 
 for frac in fraction
-    elapsed_time = @elapsed begin
-        Selected_scenarios, Unseen_scenarios = scenario_generation(Scenario_list, frac)
-        expected_profit,_,p_bid=two_price_risk_analysis(Selected_scenarios, beta)
+    Selected_scenarios, Unseen_scenarios = scenario_generation(Scenario_list, frac)
+    expected_profit,_,p_bid=two_price_risk_analysis(Selected_scenarios, beta)
 
-        NUS=length(Unseen_scenarios)
+    NUS=length(Unseen_scenarios)
 
-        expected_profit_us=0
-        for scenario in Unseen_scenarios
-            expected_profit_us+=sum((scenario[2][t]*p_bid[t]+(0.9 + 0.1*(scenario[3][t]))*scenario[2][t]*max(0,scenario[1][t]-p_bid[t])-(1.2+0.2*(scenario[3][t]-1))*scenario[2][t]*max(0,p_bid[t]-scenario[1][t])) for t in 1:T)/NUS
-        end
-
-        push!(expected_profit_list, expected_profit)
-        push!(expected_profit_us_list, expected_profit_us)
-
-        println("done with fraction $frac /0.95")
+    expected_profit_us=0
+    for scenario in Unseen_scenarios
+        expected_profit_us+=sum((scenario[2][t]*p_bid[t]+(0.9 + 0.1*(scenario[3][t]))*scenario[2][t]*max(0,scenario[1][t]-p_bid[t])-(1.2+0.2*(scenario[3][t]-1))*scenario[2][t]*max(0,p_bid[t]-scenario[1][t])) for t in 1:T)/NUS
     end
-    push!(computational_time_list, elapsed_time)
+
+    println(expected_profit)
+    println(expected_profit_us)
+
+    push!(expected_profit_list, expected_profit)
+    push!(expected_profit_us_list, expected_profit_us)
+
+    println("done with fraction $frac /$stop")
 end
 
 plot(fraction, expected_profit_list, label="Seen Senarios", linewidth=2, ylabel="Profit")
@@ -111,4 +117,55 @@ title!("Expected Profit vs Fraction")
 filepath = joinpath(@__DIR__, "task_1_5_expected_profit.png")
 savefig(filepath)
 # time can be added into the plot but does not add significant meaning
+=#
+
+
+#=
+# plot given price and production distribution over the hour
+x = collect(1:24)
+
+plot()
+price_general = zeros(24)
+L = length(lambda_t_omega_DA[:,1])
+
+
+for i in 1:L
+    price_i = lambda_t_omega_DA[i,:]
+    price_general .+= price_i/L
+    plot!(x, price_i, linewidth=1, alpha = 0.1, label=nothing, color=:blue)
+end
+
+plot!(x, price_general, label="Iteration", linewidth=1, color=:blue)
+plot!(x, price_general, label="Mean", linewidth=3, color=:red)
+xlabel!("Time [h]")
+ylabel!("Price [??]")
+title!("Price for different scenarios")
+filepath = joinpath(@__DIR__, "task_1_5_price_given.png")
+savefig(filepath)
+
+
+
+plot()
+prod_general = zeros(24)
+L = length(P_t_omega_real[:,1])
+
+for i in 1:L
+    prod_i = P_t_omega_real[i,:]
+    prod_general .+= prod_i/L
+    plot!(x, prod_i, linewidth=1, alpha = 0.1, label=nothing, color=:blue)
+end
+
+plot!(x, prod_general, label="Iteration", linewidth=1, color=:blue)
+plot!(x, prod_general, label="Mean", linewidth=3, color=:red)
+xlabel!("Time [h]")
+ylabel!("Production [??]")
+title!("Production for different scenarios")
+filepath = joinpath(@__DIR__, "task_1_5_prod_given.png")
+savefig(filepath)
+=#
+
+ 
+
+
+
 
