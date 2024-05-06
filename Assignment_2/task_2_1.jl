@@ -17,6 +17,7 @@ function FCR_D_Also_X(F_up,epsilon)
 
     W=50
     T=60
+    q=900
     M=100000000
     q=epsilon*W*T
     println(F_up[W][T])
@@ -29,13 +30,13 @@ function FCR_D_Also_X(F_up,epsilon)
 
     #Constraints
     @constraint(model_1,M[m in 1:T, w in 1:W],c_up-F_up[w][m]<= y[m,w]*M)
-    @constraint(model_1,Limit_errors,sum(y[m,W] for m in 1:T, w in 1:W)<=q)
+    @constraint(model_1,Limit_errors,sum(y[m,w] for m in 1:T, w in 1:W)<=q)
 
     # Solving the model
     optimize!(model_1)
 
     # Printing the objective value
-    return JuMP.objective_value(model_1),sum(value.(y[m,w] for m in 1:T, w in 1:W)),q
+    return JuMP.objective_value(model_1)
 end
 
 function FCR_D_Cvar(F_up,epsilon)

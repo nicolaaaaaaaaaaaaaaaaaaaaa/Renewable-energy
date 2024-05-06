@@ -2,7 +2,7 @@ using Random
 using Distributions
 using StatsBase
 using Gurobi
-
+Random.seed!(123)
 #Load generation Data
 L=200
 T=60
@@ -21,7 +21,6 @@ end
 #Load selection
 #number of selected loads
 NSS=50
-
 
 Index_selected = sample(1:L, NSS, replace=false)
 Selected_loads = []
