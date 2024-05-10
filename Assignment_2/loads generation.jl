@@ -2,7 +2,7 @@ using Random
 using Distributions
 using StatsBase
 using Gurobi
-Random.seed!(123)
+Random.seed!(121)
 #Load generation Data
 L=200
 T=60
@@ -33,4 +33,4 @@ for k in 1:L
     end
 end
 
-
+println(Selected_loads[4])
