@@ -50,6 +50,7 @@ println("C_up D_Also_X = $c_up")
 # For FCR_D_Cvar
 overbid_minutes_cvar = []
 frequency_cvar = zeros(61)
+
 for load in Selected_loads
     nb = 0
     for t in 1:length(load)
@@ -100,32 +101,45 @@ println("FCR_D_Cvar Frequency:", frequency_cvar)
 println("FCR_D_Also_X Overbid Minutes:", overbid_minutes_also_x)
 println("FCR_D_Also_X Frequency:", frequency_also_x)
 
+
+
 #Cvar plots
-#=
-#To plot frequency plots with not overbid loads
-bar(0:60, frequency_cvar, color=ifelse.(1:length(frequency_cvar) .== 1, :green, :blue), labels=["Loads not being overbid", "Loads being overbid"], title="CVaR",xlabel="Count of minutes", ylabel="Frequency of overbid")
+
+
+#bar(0:60, frequency_cvar, color=ifelse.(1:length(frequency_cvar) .== 1, :green, :blue), labels=["Loads not being overbided", "Loads being overbided"], title="CVar",xlabel="Total minutes overbided", ylabel="Times repeated")
+
+println(frequency_cvar[1])
+
+#To plot frequency plots only  with overbid loads
+bar([0], [frequency_cvar[1]], label="Loads not being overbid")
+bar!(collect(1:60),frequency_cvar[2:end], label="Loads being overbid")
 vline!([6], color=:red, linestyle=:dash, label="P90 targe line (6 min)")
 vline!([avg_cvar], color=:black, linestyle=:dash, label="Mean (3.78min)")
 
+title!("CVaR")
+xlabel!("Count of minutes")
+ylabel!("Frequency of overbid")
+filepath = joinpath(@__DIR__, "task_2_1_frequency_cvar.png")
+savefig(filepath)
 
 
 
-#To plot frequency plots only  with overbid loads
-bar(collect(0:60),frequency_cvar[2:61],title="CVaR",xlabel="Count of minutes", ylabel="Frequency of overbid",label="Loads being overbid")
-=#
 
 #ALSO-X plots
 #To plot frequency plots with not overbid loads
-bar(0:60, frequency_also_x, color=ifelse.(1:length(frequency_cvar) .== 1, :green, :blue), label=["Loads not being overbid" "Loads being overbid"], title="ALSO-X",xlabel="Count of minutes", ylabel="Frequency of overbid")
-
-
-#=
-#To plot frequency plots only  with overbid loads
-bar(collect(0:60),frequency_also_x[2:61],title="ALSO-X",xlabel="Count of minutes", ylabel="Frequency of overbid",label="Loads being overbid")
+bar([0], [frequency_also_x[1]], label="Loads not being overbid")
+bar!(collect(1:60),frequency_also_x[2:60], label="Loads being overbid")
 vline!([6], color=:red, linestyle=:dash, label="P90 targe line (6 min)")
 vline!([avg_alsox], color=:black, linestyle=:dash, label="Mean (5.96 min)")
 
+title!("ALSO-X")
+xlabel!("Count of minutes")
+ylabel!("Frequency of overbid")
+filepath = joinpath(@__DIR__, "task_2_1_frequency_ALSOX.png")
+savefig(filepath)
 
+
+#=
 #Single loads
 x=collect(1:60)
 plot(x,Selected_loads[5], label="Load 5",xlabel="time (min)",ylabel="power (kW)")
@@ -133,3 +147,5 @@ plot!(x,Selected_loads[7], label= "Load 7")
 plot!(ones(60)*c_up, label="ALSO-X")
 plot!(ones(60)*c_up_0, label="CVaR")
 =#
+
+print("done")
