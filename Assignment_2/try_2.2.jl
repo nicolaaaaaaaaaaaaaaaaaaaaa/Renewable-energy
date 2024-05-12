@@ -98,27 +98,30 @@ println("FCR_D_Also_X Frequency:", frequency_also_x)
 
 #Cvar plots
 #=
+
 #To plot frequency plots with not overbided loads
-bar(0:60, frequency_cvar, color=ifelse.(1:length(frequency_cvar) .== 1, :green, :blue), labels=["Loads not being overbided", "Loads being overbided"], title="CVar",xlabel="Total minutes overbided", ylabel="Times repeated")
+bar([0], [frequency_cvar[1]], label="Loads not being overbid",xlabel="Count of minutes", ylabel="Frequency of overbid",title="CVaR")
+bar!(collect(1:60),frequency_cvar[2:60], label="Loads being overbid")
 
-
+vline!([6], color=:red, linestyle=:dash, label="P90 targe line (6 min)")
+vline!([avg_cvar], color=:black, linestyle=:dash, label="Mean (2.59 min)")
 
 #To plot frequency plots only  with overbided loads
 bar(collect(0:60),frequency_cvar[2:61],title="CVaR",xlabel="Total minutes overbided", ylabel="Times repeated")
 
 
-vline!([6], color=:red, linestyle=:dash, label="Vertical Line")
-vline!([avg_cvar], color=:black, linestyle=:dash, label="mean")
-=#
+
 #ALSO-X plots
 #To plot frequency plots with not overbided loads
-bar(0:60, frequency_also_x, color=ifelse.(1:length(frequency_cvar) .== 1, :green, :blue), labels=["Loads not being overbided", "Loads being overbided"], title="ALSO-X",xlabel="Total minutes overbided", ylabel="Times repeated")
-
-
-#=
-#To plot frequency plots only  with overbided loads
-bar(collect(0:60),frequency_also_x[2:61],title="ALSO-X",xlabel="Total minutes overbided", ylabel="Times repeated")
+bar(0:60, frequency_also_x, color=ifelse.(1:length(frequency_cvar) .== 1, :green, :blue), labels=["Loads not being overbid", "Loads being overbid"], title="ALSO-X",xlabel="Count of minutes", ylabel="Frequency of overbid")
+vline!([6], color=:red, linestyle=:dash, label="P90 targe line (6 min)")
+vline!([avg_alsox], color=:black, linestyle=:dash, label="Mean (6.35 min)")
 
 =#
-vline!([6], color=:red, linestyle=:dash, label="Vertical Line")
-vline!([avg_alsox], color=:black, linestyle=:dash, label="mean")
+#To plot frequency plots only  with overbided loads
+bar([0], [frequency_also_x[1]], label="Loads not being overbid",xlabel="Count of minutes", ylabel="Frequency of overbid",title="ALSO-X")
+bar!(collect(1:60),frequency_also_x[2:60], label="Loads being overbid")
+
+vline!([6], color=:red, linestyle=:dash, label="P90 targe line (6 min)")
+vline!([avg_alsox], color=:black, linestyle=:dash, label="Mean (7.55 min)")
+
