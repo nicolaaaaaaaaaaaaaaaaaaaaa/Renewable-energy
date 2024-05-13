@@ -6,6 +6,7 @@ using Clustering
 using Distances
 using Plots
 using StatsBase
+using StatsPlots
 
 include("Scenario generation.jl")
 include("Two_price_scheme_risk_analysis.jl")
@@ -44,7 +45,7 @@ beta = 0.7      # we just need to stick with one
 # part a: same number of scenarios but different chosen scenarios 
 # computes the optimal DA production repetitions time, plots mean, 25th and 75th quantile
 
-repetitions = 50
+repetitions = 500
 
 expected_profit_list = []
 p_all = zeros(repetitions, 24)
@@ -53,7 +54,8 @@ time = collect(1:24)
 
 for i in 1:repetitions
 
-    Selected_scenarios, Unseen_scenarios = scenario_generation(Scenario_list, 0.2)
+    Selected_scenarios, Unseen_scenarios = scenario_generation(Scenario_list, 250/length(Scenario_list))
+    #println(length(Selected_scenarios))
     expected_profit,_,p_bid=two_price_risk_analysis(Selected_scenarios, beta)
 
     p_all[i,:] = p_bid
@@ -64,23 +66,49 @@ for i in 1:repetitions
     println("done with repetition $i / $repetitions")
 end
 
-q_all_means = mean(p_all, dims=1)
-q_all_means =q_all_means'
-q_all_q25 = [quantile(sort(col), 0.25) for col in eachcol(p_all)]
-q_all_q75 = [quantile(sort(col), 0.75) for col in eachcol(p_all)]
+p_all_means = mean(p_all, dims=1)[:]
+p_all_q25 = [quantile(col, 0.25) for col in eachcol(p_all)]
+p_all_q75 = [quantile(col, 0.75) for col in eachcol(p_all)]
 
-plot(time, q_all_means, ribbon=(q_all_q25, q_all_q75), label="Mean ± CI", linewidth=2, ribbon_color=:blue, linecolor=:red)
+#plot(time, q_all_means, ribbon=(q_all_q25, q_all_q75), label="Mean ± CI", linewidth=2, ribbon_color=:blue, linecolor=:red)
+
+plot(time, p_all_q25, linecolor=:transparent, fillrange=p_all_q75, fillalpha=0.3, label=nothing, color=:blue)
+plot!(time, p_all_means, label="Seen + CI", color=:red, linewidth=2)
 
 xlabel!("time [h]")
 ylabel!("Power [MW]")
 title!("DA Production for different scenarios")
-filepath = joinpath(@__DIR__, "task_1_5_price.png")
+filepath = joinpath(@__DIR__, "task_1_5_DA_production.png")
 savefig(filepath)
 
 # mean and standard deviation of the expected profit
 expected_mean = mean(expected_profit_list)
 expected_std = std(expected_profit_list)  
-println("expected_profit:    mean =$expected_mean and std = $expected_std") 
+println("expected_profit:    mean =$expected_mean and std = $expected_std = $(expected_std/expected_mean*100)%") 
+
+#expected_profit_list = expected_profit_list./100000
+#histogram(expected_profit_list, normalize=true, legend=false, bins=20)
+#xlabel!("Expected Profit [*10^5 DKK]")
+#ylabel!("Frequency")
+#title!("Distribution of Expected Profit")
+#filepath = joinpath(@__DIR__, "task_1_5_value_distribution.png")
+#savefig(filepath)
+
+expected_profit_array = collect(expected_profit_list./100000)
+
+mu = mean(expected_profit_array)
+sigma = std(expected_profit_array)
+x_vals = range(minimum(expected_profit_array), stop=maximum(expected_profit_array), length=100)
+y_vals = pdf(Normal(mu, sigma), x_vals)
+
+#density(expected_profit_list, label="density")
+histogram(expected_profit_array, label="histogram",normalize=true, bins=25)
+plot!(x_vals, y_vals, label="Gaussian Distribution", linewidth=2, color=:red)
+xlabel!("Expected Profit [*10^5 DKK]")
+ylabel!("Density")
+title!("Distribution of Expected Profit")
+filepath = joinpath(@__DIR__, "task_1_5_value_distribution.png")
+savefig(filepath)
 =#
 
 
@@ -196,6 +224,7 @@ savefig(filepath)
 =#
 
 
+
 #=
 # evaluate effect of total scenario size 
 # ratio seen/total constant, but total decreases to Scenario_list[:max_index]
@@ -210,7 +239,7 @@ fraction_total = range(start=start, stop=stop, step=0.1)
 expected_profit_list = []
 expected_profit_us_list = []
 
-used_fraction = 0.2
+used_fraction = 0.4
 
 
 
@@ -228,9 +257,6 @@ for frac in fraction_total
         expected_profit_us+=sum((scenario[2][t]*p_bid[t]+(0.9 + 0.1*(scenario[3][t]))*scenario[2][t]*max(0,scenario[1][t]-p_bid[t])-(1.2+0.2*(scenario[3][t]-1))*scenario[2][t]*max(0,p_bid[t]-scenario[1][t])) for t in 1:T)/NUS
     end
 
-    #println(expected_profit)
-    #println(expected_profit_us)
-
     push!(expected_profit_list, expected_profit)
     push!(expected_profit_us_list, expected_profit_us)
 
@@ -238,15 +264,15 @@ for frac in fraction_total
 end
 
 
-
-plot(fraction_total, expected_profit_list, label="Seen Senarios", linewidth=2, ylabel="Profit")
-plot!(fraction_total, expected_profit_us_list, label="Unseen Scenarios", linewidth=2)
-#vline!([250/length(Scenario_list)], linestyle=:dot, label="previous ratio")
-
+plot(fraction_total, expected_profit_list./100000, label="Seen Senarios", linewidth=2)
+plot!(fraction_total, expected_profit_us_list./100000, label="Unseen Scenarios", linewidth=2)
+ylabel!("Profit [*10^5 DKK]")
 xlabel!("Fraction of total scenarios")
 title!("Expected Profit VS fraction of total scenarios")
-#plot!(legend=:outerbottom, legendcolumns=3)
 filepath = joinpath(@__DIR__, "task_1_5_effect_total_size.png")
 savefig(filepath)
 =#
+
+
+
 
