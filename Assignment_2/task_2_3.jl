@@ -9,7 +9,7 @@ using StatsBase
 
 using LinearAlgebra
 
-include("task_2_1.jl")
+include("task_2_functions.jl")
 resolution=0.01
 expected_reserve_shortfall=zeros((floor(Int64,0.2/resolution)+1,5))
 global l=1
