@@ -5,96 +5,142 @@ using Printf
 using Clustering
 using Distances
 using Plots
-# Import the redirect_stdout function
-using Base: redirect_stdout
 
-include("loads generation.jl")
+using LinearAlgebra
+
+include("task_2_functions.jl")
+
+c_up_0 = FCR_D_Cvar(Selected_loads,0.1)
+c_up = FCR_D_Also_X(Selected_loads,0.1)
+println("C_up CVAR = $c_up_0")
+println("C_up D_Also_X = $c_up")
 
 
-function FCR_D_Also_X(F_up,epsilon)
-    
-    model_1= Model(Gurobi.Optimizer)
 
-    W=50
-    T=60
-    q=900
-    M=100000000
-    q=epsilon*W*T
-    println(F_up[W][T])
-    #declare Variables
-    @variable(model_1, c_up>=0)
-    @variable(model_1, y[m in 1:T,w in 1:W], Bin)
-
-    #Objective function
-    @objective(model_1,Max,c_up)
-
-    #Constraints
-    @constraint(model_1,M[m in 1:T, w in 1:W],c_up-F_up[w][m]<= y[m,w]*M)
-    @constraint(model_1,Limit_errors,sum(y[m,w] for m in 1:T, w in 1:W)<=q)
-
-    # Solving the model
-    optimize!(model_1)
-
-    # Printing the objective value
-    return JuMP.objective_value(model_1)
+q=(NSS)*T*0.1
+global nb_0=0
+for el in Selected_loads
+    for t in 1:length(el)
+        if el[t]<c_up_0
+            global nb_0=nb_0+1
+        end
+    end
 end
 
-function FCR_D_Cvar(F_up,epsilon)
-
-    model_1= Model(Gurobi.Optimizer)
-
-    W=50
-    T=60
-    #declare Variables
-    @variable(model_1, c_up>=0)
-    @variable(model_1, Beta<=0)
-    @variable(model_1, zeta[m in 1:T, w in 1:W])
-
-
-    #Objective function
-    @objective(model_1,Max,c_up)
-
-    #Constraints
-    @constraint(model_1,Zeta[m in 1:T,w in 1:W],c_up-F_up[w][m]<=zeta[m,w])
-    @constraint(model_1,Default_number,1/(T*W)*sum(zeta[m,w] for m in 1:T, w in 1:W)<=(1-epsilon)*Beta)
-    @constraint(model_1,Betas[m in 1:T,w in 1:W], Beta<=zeta[m,w])
-
-    # Solving the model
-    optimize!(model_1)
-
-    # Printing the objective value
-    return JuMP.objective_value(model_1)
-
+global nb=0
+for el in Selected_loads
+    for t in 1:length(el)
+        if el[t]<c_up
+            global nb=nb+1
+        end
+    end
 end
+
+matrix = hcat(Selected_loads...)
+
+# Flatten the matrix into a single list
+combined_list = collect(Iterators.flatten(matrix))
+
+c_up_0 = FCR_D_Cvar(Selected_loads, 0.1)
+c_up = FCR_D_Also_X(Selected_loads, 0.1)
+
+println("C_up CVAR = $c_up_0")
+println("C_up D_Also_X = $c_up")
+
+# For FCR_D_Cvar
+overbid_minutes_cvar = []
+frequency_cvar = zeros(61)
+for load in Selected_loads
+    nb = 0
+    for t in 1:length(load)
+        if load[t] < c_up_0
+            nb += 1
+        end
+    end
+    push!(overbid_minutes_cvar, nb)
+    frequency_cvar[nb + 1] += 1
+end
+
+# For FCR_D_Also_X
+overbid_minutes_also_x = []
+frequency_also_x = zeros(61)
+for load in Selected_loads
+    nb = 0
+    for t in 1:length(load)
+        if load[t] < c_up
+            nb += 1
+        end
+    end
+    push!(overbid_minutes_also_x, nb)
+    frequency_also_x[nb + 1] += 1
+end
+#=
+# Plot for FCR_D_Cvar
+x = collect(1:60)
+plot(x, Selected_loads[4], title="load 1")
+plot!(ones(60) * c_up_0, label="CVar")
+plot!(ones(60) * c_up,label="ALSO-X")
+=#
+# Plot for FCR_D_Also_X
+# You can plot the frequency and overbid_minutes for FCR_D_Also_X here if needed
+
+#calculations
+
+avg_cvar = mean(overbid_minutes_cvar)
+avg_alsox = mean(overbid_minutes_also_x)
+
+# Print the average
+println("Average CVar:", avg_cvar)
+println("Average ALSO_X:", avg_alsox)
+
+# Print the results
+println("FCR_D_Cvar Overbid Minutes:", overbid_minutes_cvar)
+println("FCR_D_Cvar Frequency:", frequency_cvar)
+
+println("FCR_D_Also_X Overbid Minutes:", overbid_minutes_also_x)
+println("FCR_D_Also_X Frequency:", frequency_also_x)
+
+#Cvar plots
+
+
+#To plot frequency plots with not overbid loads
+
+bar([0], [frequency_cvar[1]], label="Loads not being overbid",xlabel="Count of minutes", ylabel="Frequency of overbid",title="CVaR")
+bar!(collect(1:60),frequency_cvar[2:60], label="Loads being overbid")
+vline!([6], color=:red, linestyle=:dash, label="P90 targe line (6 min)")
+vline!([avg_cvar], color=:black, linestyle=:dash, label="Mean (3.78min)")
+
 
 #=
-epsilon=0.1
+
+#To plot frequency plots only  with overbid loads
+bar(collect(0:60),frequency_cvar[2:61],title="CVaR",xlabel="Count of minutes", ylabel="Frequency of overbid",label="Loads being overbid")
 
 
-opt_Also_x = zeros(50)
-opt_CVar = zeros(50)
-for k in 1:50
+#ALSO-X plots
+#To plot frequency plots with not overbid loads
+bar([0], [frequency_also_x[1]], label="Loads not being overbid",xlabel="Count of minutes", ylabel="Frequency of overbid",title="ALSO-X")
+bar!(collect(1:60),frequency_also_x[2:60], label="Loads being overbid")
+vline!([6], color=:red, linestyle=:dash, label="P90 targe line (6 min)")
+vline!([avg_alsox], color=:black, linestyle=:dash, label="Mean (5.96 min)")
 
-    include("loads generation.jl")
-    # Define a dummy sink
-    struct DummySink end
-    Base.show(io::DummySink, x...) = nothing
 
-    # Redirect stdout to the dummy sink
-    old_stdout = Base.stdout
-    stdout = IOBuffer()
 
-    opt_Also_x[k] = FCR_D_Also_X(Selected_loads,0.1)
 
-    opt_CVar[k] = FCR_D_Cvar(Selected_loads,0.1)
-end
 
-x=[k for k in 1:50]
 
-# Plot the sine function
-plot(x, opt_Also_x, label="Also x", xlabel="scenario", ylabel="Also_x", title="Day ahead production (MW)", linewidth=2)
-plot!(x, opt_CVar, label="C_var", xlabel="scenario", ylabel="CVar")
-#savefig("One_price_scheme_strategy.png")
-#println("Expected profit: $(expected_profit)")
+#To plot frequency plots only  with overbid loads
+bar(collect(0:60),frequency_also_x[2:61],title="ALSO-X",xlabel="Count of minutes", ylabel="Frequency of overbid",label="Loads being overbid")
+vline!([6], color=:red, linestyle=:dash, label="P90 targe line (6 min)")
+vline!([avg_alsox], color=:black, linestyle=:dash, label="Mean (5.96 min)")
 
+
+#Single loads
+x=collect(1:60)
+plot(x,Selected_loads[5], label="Load 5",xlabel="time (min)",ylabel="power (kW)")
+plot!(x,Selected_loads[7], label= "Load 7")
+plot!(ones(60)*c_up, label="ALSO-X")
+plot!(ones(60)*c_up_0, label="CVaR")
 =#
+
+
